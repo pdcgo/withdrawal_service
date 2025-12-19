@@ -1,0 +1,128 @@
+package withdrawal_service
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"sync"
+
+	"cloud.google.com/go/storage"
+	"github.com/pdcgo/shared/authorization"
+	"github.com/pdcgo/shared/interfaces/withdrawal_iface"
+	"github.com/pdcgo/shared/pkg/streampipe"
+	"gorm.io/gorm"
+)
+
+type wdServiceImpl struct {
+	emitter   ErrEmitter
+	db        *gorm.DB
+	pub       streampipe.PublishProvider
+	mut       sync.Mutex
+	ctx       context.Context
+	cancelCtx context.CancelFunc
+
+	withdrawal_iface.UnimplementedWithdrawalServiceServer
+	store TaskStore
+}
+
+// GetTaskList implements withdrawal_iface.WithdrawalServiceServer.
+func (w *wdServiceImpl) GetTaskList(ctx context.Context, pay *withdrawal_iface.TaskListRequest) (*withdrawal_iface.TaskListResponse, error) {
+	var err error
+	res := withdrawal_iface.TaskListResponse{
+		Items: []*withdrawal_iface.TaskItem{},
+	}
+
+	if pay.TeamId == 0 {
+		return &res, errors.New("team_id tidak boleh kosong")
+	}
+
+	tx := w.store.GetTx()
+	query := tx.
+		Model(&TaskItem{}).
+		Where("team_id = ?", pay.TeamId).
+		Order("id desc")
+
+	if pay.Status != withdrawal_iface.TaskStatus_TASK_ALL {
+		query = query.Where("status = ?", pay.Status)
+	}
+
+	err = query.
+		Find(&res.Items).
+		Error
+
+	return &res, err
+
+}
+
+// HealthCheck implements withdrawal_iface.WithdrawalServiceServer.
+func (w *wdServiceImpl) HealthCheck(ctx context.Context, pay *withdrawal_iface.EmptyRequest) (*withdrawal_iface.CommonResponse, error) {
+	// identity, _ := authorization.GetIdentity(ctx)
+	return &withdrawal_iface.CommonResponse{
+		Message: "service_ok",
+	}, nil
+}
+
+// Run implements withdrawal_iface.WithdrawalServiceServer.
+func (w *wdServiceImpl) Run(context.Context, *withdrawal_iface.EmptyRequest) (*withdrawal_iface.CommonResponse, error) {
+	if !w.mut.TryLock() {
+		return &withdrawal_iface.CommonResponse{
+			Message: "still_running",
+		}, errors.New("still_running")
+	}
+
+	w.ctx, w.cancelCtx = context.WithCancel(context.Background())
+
+	go func() {
+		defer w.mut.Unlock()
+		client, err := storage.NewClient(w.ctx)
+		if err != nil {
+			slog.Error(err.Error())
+			return
+
+		}
+		defer client.Close()
+		NewRunner(w.ctx, w.db, w.store, w.pub, client).
+			Run(w.emitter)
+	}()
+
+	return &withdrawal_iface.CommonResponse{
+		Message: "started",
+	}, nil
+}
+
+// Stop implements withdrawal_iface.WithdrawalServiceServer.
+func (w *wdServiceImpl) Stop(context.Context, *withdrawal_iface.EmptyRequest) (*withdrawal_iface.CommonResponse, error) {
+	w.cancelCtx()
+	return &withdrawal_iface.CommonResponse{}, nil
+}
+
+// SubmitWithdrawal implements withdrawal_iface.WithdrawalServiceServer.
+func (w *wdServiceImpl) SubmitWithdrawal(ctx context.Context, payload *withdrawal_iface.SubmitWdRequest) (*withdrawal_iface.CommonResponse, error) {
+
+	identity := ctx.Value("identity").(*authorization.JwtIdentity)
+
+	res := withdrawal_iface.CommonResponse{
+		Message: "task_submitted",
+	}
+	err := w.store.Add(identity, payload)
+	if err != nil {
+		return &res, err
+	}
+
+	w.Run(ctx, &withdrawal_iface.EmptyRequest{})
+	return &res, nil
+}
+
+func NewWithdrawalService(db *gorm.DB, pub streampipe.PublishProvider) withdrawal_iface.WithdrawalServiceServer {
+	store := NewTempStore(db)
+
+	emitter, run_pipe := NewTaskErrorPipeline(store, context.Background())
+	go run_pipe()
+
+	return &wdServiceImpl{
+		db:      db,
+		pub:     pub,
+		store:   store,
+		emitter: emitter,
+	}
+}

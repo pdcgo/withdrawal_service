@@ -1,0 +1,1 @@
+gcloud run deploy withdrawal-service --source .
