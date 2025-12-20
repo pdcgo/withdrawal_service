@@ -65,3 +65,14 @@ func TestPanicVioleta(t *testing.T) {
 	_, err = importer.ValidWithdrawal(t.Context())
 	assert.Nil(t, err)
 }
+
+func TestLuxySisa(t *testing.T) {
+	fname := "../../test/assets/shopee/luxy_balance_sisa.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource_shopee.NewShopeeXlsWithdrawal(file)
+	_, err = importer.ValidWithdrawal(t.Context())
+	assert.Nil(t, err)
+}

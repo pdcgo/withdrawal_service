@@ -25,37 +25,114 @@ func (w *ShopeeWdSet) WithErr(err error) error {
 	)
 }
 
+func (wd *ShopeeWdSet) FundedEarning() (EarningList, error) {
+	earnlist := EarningList{}
+
+	var fundedAmount float64
+	wdAmount := math.Abs(wd.Withdrawal.Amount)
+
+	if wd.Withdrawal.BalanceAfter < 0 {
+		return earnlist, errors.New("balance after minus not implemented")
+	}
+
+	i := 0
+	var notFundedAmount float64
+	if wd.Withdrawal.BalanceAfter > 0 {
+		for i < len(wd.Earning) {
+
+			notFundedAmount += wd.Earning[i].Amount
+			if notFundedAmount <= wd.Withdrawal.BalanceAfter {
+				// fmt.Printf("not funded %.3f - %d - %.3f \n", wd.Withdrawal.Amount, i, wd.Earning[i].Amount)
+				// earnlist = append(earnlist, wd.Earning[i])
+				i++
+			} else {
+				break
+			}
+		}
+	}
+
+	for i < len(wd.Earning) {
+
+		fundedAmount += wd.Earning[i].Amount
+		if fundedAmount <= wdAmount {
+			// fmt.Printf("funded %.3f - %d - %.3f \n", wd.Withdrawal.Amount, i, wd.Earning[i].Amount)
+			earnlist = append(earnlist, wd.Earning[i])
+			i++
+		} else {
+			break
+		}
+	}
+
+	if wd.WdSetBefore != nil {
+		before := wd.WdSetBefore
+		if before.Withdrawal.BalanceAfter > 0 {
+			beforeNotFund, err := before.NotFundedEarning()
+			if err != nil {
+				return earnlist, err
+			}
+
+			// for _, earn := range beforeNotFund {
+			// 	fmt.Printf("before %.3f - %d - %.3f \n", before.Withdrawal.Amount, i, earn.Amount)
+			// }
+
+			earnlist = append(earnlist, beforeNotFund...)
+
+		}
+	}
+
+	if wdAmount != earnlist.GetAmount() {
+		return earnlist, wd.WithErr(fmt.Errorf("cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earnlist.GetAmount()))
+	}
+
+	return earnlist, nil
+}
+
+func (wd *ShopeeWdSet) NotFundedEarning() (EarningList, error) {
+	earnlist := EarningList{}
+
+	if wd.Withdrawal.BalanceAfter == 0 {
+		return earnlist, nil
+	}
+
+	if wd.Withdrawal.BalanceAfter < 0 {
+		return earnlist, errors.New("balance after minus not implemented")
+	}
+
+	if wd.Withdrawal.BalanceAfter > 0 {
+		var targetfund float64
+		for _, earn := range wd.Earning {
+			targetfund += earn.Amount
+			if targetfund <= wd.Withdrawal.BalanceAfter {
+				earnlist = append(earnlist, earn)
+			} else {
+				break
+			}
+		}
+	}
+
+	if wd.Withdrawal.BalanceAfter != earnlist.GetAmount() {
+		return earnlist, fmt.Errorf("tidak bisa detect sisa balance withdrawal %.3f", wd.Withdrawal.BalanceAfter)
+	}
+
+	return earnlist, nil
+}
+
 func (wd *ShopeeWdSet) NotFundedAmount() float64 {
 	return wd.Earning.GetAmount() - math.Abs(wd.Withdrawal.Amount)
 }
 
 func (wd *ShopeeWdSet) TraceValidEarning() (EarningList, error) {
+	var err error
 	result := EarningList{}
 	result = append(result, wd.Earning...)
 
 	notFundedAmount := wd.NotFundedAmount()
 
 	if notFundedAmount < 0 {
-		before := wd.WdSetBefore
-		if before == nil {
-			return nil, wd.WithErr(errors.New("before not found"))
+		result, err = wd.FundedEarning()
+		if err != nil {
+			return result, err
 		}
-
-		notFundedAmountAbs := math.Abs(notFundedAmount)
-
-		var beforeFundedAmount float64
-		beforeEarn := EarningList{}
-
-		for _, earning := range before.Earning {
-			beforeFundedAmount += earning.Amount
-			if beforeFundedAmount <= notFundedAmountAbs {
-				beforeEarn = append(beforeEarn, earning)
-			} else {
-				break
-			}
-		}
-
-		result = append(result, beforeEarn...)
 
 		if math.Abs(wd.Withdrawal.Amount) != result.GetAmount() {
 			return result, wd.WithErr(fmt.Errorf("cannot trace valid earning %.3f", result.GetAmount()))
@@ -64,50 +141,30 @@ func (wd *ShopeeWdSet) TraceValidEarning() (EarningList, error) {
 	}
 
 	if notFundedAmount > 0 {
-		var beforeFundedAmount float64
-		beforeEarn := EarningList{}
-
-		fundedAmountAbs := math.Abs(wd.Withdrawal.Amount)
-
-		var c int = len(wd.Earning) - 1
-		for c >= 0 {
-			beforeFundedAmount += wd.Earning[c].Amount
-			if beforeFundedAmount <= fundedAmountAbs {
-				beforeEarn = append(beforeEarn, wd.Earning[c])
-			} else {
-				break
-			}
-			c--
-		}
-
-		result = beforeEarn
-
-		if math.Abs(wd.Withdrawal.Amount) != result.GetAmount() {
-			return result, wd.WithErr(fmt.Errorf("cannot trace valid earning %.3f", result.GetAmount()))
-		}
+		return wd.FundedEarning()
 	}
 
 	return result, nil
 }
 
-func (wd *ShopeeWdSet) FundedEarning() (EarningList, EarningList, error) {
-	var earning EarningList
-	var notEarning EarningList
+// func (wd *ShopeeWdSet) FundedEarning() (EarningList, EarningList, error) {
+// 	var earning EarningList
+// 	var notEarning EarningList
 
-	wdAbsAmount := math.Abs(wd.Withdrawal.Amount)
-	err := ComboIndices(len(wd.Earning), func(index []int) error {
+// 	wdAbsAmount := math.Abs(wd.Withdrawal.Amount)
+// 	err := ComboIndices(len(wd.Earning), func(index []int) error {
 
-		dd := wd.Earning.SubsetIndex(index, false)
-		if dd.GetAmount() == wdAbsAmount {
-			earning = dd
-			notEarning = wd.Earning.SubsetIndex(index, true)
-			return ErrComboStop
-		}
-		return nil
-	})
+// 		dd := wd.Earning.SubsetIndex(index, false)
+// 		if dd.GetAmount() == wdAbsAmount {
+// 			earning = dd
+// 			notEarning = wd.Earning.SubsetIndex(index, true)
+// 			return ErrComboStop
+// 		}
+// 		return nil
+// 	})
 
-	return earning, notEarning, err
-}
+// 	return earning, notEarning, err
+// }
 
 type EarningList []*db_models.InvoItem
 

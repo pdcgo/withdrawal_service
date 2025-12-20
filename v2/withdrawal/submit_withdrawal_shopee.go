@@ -215,7 +215,26 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 			case db_models.AdjOrderFund:
 				switch earn.Amount {
 				case -350.00:
+					streamlog("set beban return %s amount %.3f", earn.ExternalOrderID, earn.Amount)
+					req := &order_iface.MpPaymentCreateRequest{
+						TeamId:  uint64(ord.TeamID),
+						OrderId: uint64(ord.ID),
+						ShopId:  uint64(mp.ID),
+						Type:    string(db_models.AdjReturn),
+						Amount:  earn.Amount,
+						Desc:    earn.Description,
+						At:      timestamppb.New(earn.TransactionDate),
+						WdAt:    timestamppb.New(wd.Withdrawal.TransactionDate),
+						Source:  order_iface.MpPaymentSource_MP_PAYMENT_SOURCE_IMPORTER,
+					}
 
+					_, err = w.orderService.MpPaymentCreate(ctx, &connect.Request[order_iface.MpPaymentCreateRequest]{
+						Msg: req,
+					})
+
+					if err != nil {
+						return streamerr(err)
+					}
 				}
 
 				if earn.Amount < 0 {
@@ -226,7 +245,7 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 				if estAmount == 0 {
 					estAmount = earn.Amount
 				}
-
+				streamlog("revenue %s amount %.3f", earn.ExternalOrderID, earn.Amount)
 				// send to revenue
 				err = revenueStream.Send(&revenue_iface.RevenueStreamRequest{
 					Event: &revenue_iface.RevenueStreamEvent{
