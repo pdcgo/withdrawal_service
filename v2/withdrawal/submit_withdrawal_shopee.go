@@ -213,6 +213,10 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 
 			switch earn.Type {
 			case db_models.AdjOrderFund:
+				switch earn.Amount {
+				case -350.00:
+
+				}
 
 				if earn.Amount < 0 {
 					continue

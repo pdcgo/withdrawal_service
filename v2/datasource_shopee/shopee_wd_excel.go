@@ -107,6 +107,9 @@ func (s *shopeeXlsImpl) Withdrawals(ctx context.Context) ([]*ShopeeWdSet, error)
 			wds = append(wds, wd)
 
 		default:
+			if wd == nil {
+				return nil
+			}
 			wd.Earning = append(wd.Earning, item)
 		}
 
