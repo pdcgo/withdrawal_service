@@ -182,6 +182,7 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 				var ord *db_models.Order
 				switch inv.Type {
 				case db_models.AdsPayment:
+				case db_models.AdjUnknown:
 				default:
 					ord, err = w.orderRepo.OrderByExternalID(inv.ExternalOrderID)
 					if err != nil {
@@ -255,33 +256,55 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 
 				case db_models.AdjUnknown:
 					if inv.Amount < 0 {
-						streamerr(fmt.Errorf("%s error %.3f", inv.Type, inv.Amount))
-						continue
-					}
-
-					_, err := w.rclient.RevenueOther(ctx, &connect.Request[revenue_iface.RevenueOtherRequest]{
-						Msg: &revenue_iface.RevenueOtherRequest{
-							TeamId:            pay.TeamId,
-							ExternalRevenueId: inv.ExternalOrderID,
-							LabelInfo: &revenue_iface.ExtraLabelInfo{
-								CsId:   uint64(agent.IdentityID()),
-								ShopId: uint64(mp.ID),
-								TypeLabels: []*accounting_iface.TypeLabel{
-									{
-										Key:   accounting_iface.LabelKey_LABEL_KEY_REVENUE_SOURCE,
-										Label: accounting_iface.RevenueSource_name[int32(accounting_iface.RevenueSource_REVENUE_SOURCE_OTHER)],
+						_, err := w.rclient.SellingExpenseOther(ctx, &connect.Request[revenue_iface.SellingExpenseOtherRequest]{
+							Msg: &revenue_iface.SellingExpenseOtherRequest{
+								TeamId:            pay.TeamId,
+								ExternalExpenseId: fmt.Sprintf("%s%s", inv.Description, inv.TransactionDate.Format(tiktokDateFmt)),
+								LabelInfo: &revenue_iface.ExtraLabelInfo{
+									CsId:   uint64(agent.IdentityID()),
+									ShopId: uint64(mp.ID),
+									TypeLabels: []*accounting_iface.TypeLabel{
+										{
+											Key:   accounting_iface.LabelKey_LABEL_KEY_REVENUE_SOURCE,
+											Label: accounting_iface.RevenueSource_name[int32(accounting_iface.RevenueSource_REVENUE_SOURCE_OTHER)],
+										},
 									},
 								},
+								Amount: math.Abs(inv.Amount),
+								Desc:   inv.Description,
+								At:     timestamppb.New(inv.TransactionDate),
 							},
-							Amount: inv.Amount,
-							Desc:   inv.Description,
-							At:     timestamppb.New(inv.TransactionDate),
-						},
-					})
+						})
 
-					if err != nil {
-						return streamerr(err)
+						if err != nil {
+							return streamerr(err)
+						}
+					} else {
+						_, err := w.rclient.RevenueOther(ctx, &connect.Request[revenue_iface.RevenueOtherRequest]{
+							Msg: &revenue_iface.RevenueOtherRequest{
+								TeamId:            pay.TeamId,
+								ExternalRevenueId: inv.ExternalOrderID,
+								LabelInfo: &revenue_iface.ExtraLabelInfo{
+									CsId:   uint64(agent.IdentityID()),
+									ShopId: uint64(mp.ID),
+									TypeLabels: []*accounting_iface.TypeLabel{
+										{
+											Key:   accounting_iface.LabelKey_LABEL_KEY_REVENUE_SOURCE,
+											Label: accounting_iface.RevenueSource_name[int32(accounting_iface.RevenueSource_REVENUE_SOURCE_OTHER)],
+										},
+									},
+								},
+								Amount: inv.Amount,
+								Desc:   inv.Description,
+								At:     timestamppb.New(inv.TransactionDate),
+							},
+						})
+
+						if err != nil {
+							return streamerr(err)
+						}
 					}
+
 				}
 			}
 		}

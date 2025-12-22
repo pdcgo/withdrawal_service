@@ -78,3 +78,22 @@ func TestTiktokGmvPayment(t *testing.T) {
 
 	assert.Equal(t, 1, ads)
 }
+
+func TestAdditionalCampaign(t *testing.T) {
+	fname := "../../test/assets/tiktok/husen_campaign.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	wds, err := importer.IterateWithdrawal()
+	assert.Nil(t, err)
+
+	for _, wd := range wds {
+		for _, earn := range wd.Earning {
+			for _, invo := range earn.Involist {
+				t.Log(invo.Type)
+			}
+		}
+	}
+}

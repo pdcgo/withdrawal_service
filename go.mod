@@ -10,8 +10,8 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/google/wire v0.7.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2
-	github.com/pdcgo/schema v1.0.80
-	github.com/pdcgo/shared v1.0.106
+	github.com/pdcgo/schema v1.0.83
+	github.com/pdcgo/shared v1.0.110
 	github.com/stretchr/testify v1.11.1
 	github.com/xuri/excelize/v2 v2.9.1
 	golang.org/x/net v0.44.0
@@ -43,6 +43,7 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.0.0 // indirect
 	cloud.google.com/go/secretmanager v1.15.0 // indirect
 	cloud.google.com/go/trace v1.11.6 // indirect
+	connectrpc.com/grpcreflect v1.3.0 // indirect
 	connectrpc.com/otelconnect v0.8.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect

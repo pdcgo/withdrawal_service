@@ -264,16 +264,31 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 					return streamerr(err)
 				}
 
-			case db_models.AdjReturn:
-				return streamerr(fmt.Errorf("%s not implemented", earn.Type))
-			case db_models.AdjCommision,
-				db_models.AdjLostCompensation,
+			case db_models.AdjLostCompensation,
+				db_models.AdjReturn,
+				db_models.AdjCommision,
 				db_models.AdjCompensation,
 				db_models.AdjUnknown,
 				db_models.AdjUnknownAdj:
+				_, err = w.orderService.MpPaymentCreate(ctx, &connect.Request[order_iface.MpPaymentCreateRequest]{
+					Msg: &order_iface.MpPaymentCreateRequest{
+						TeamId:  uint64(ord.TeamID),
+						OrderId: uint64(ord.ID),
+						ShopId:  uint64(mp.ID),
+						Type:    string(db_models.AdjLostCompensation),
+						Amount:  earn.Amount,
+						Desc:    earn.Description,
+						At:      timestamppb.New(earn.TransactionDate),
+						WdAt:    timestamppb.New(wd.Withdrawal.TransactionDate),
+						Source:  order_iface.MpPaymentSource_MP_PAYMENT_SOURCE_IMPORTER,
+					},
+				})
 
-				return streamerr(fmt.Errorf("%s not implemented", earn.Type))
+				if err != nil {
+					return streamerr(err)
+				}
 
+				// return streamerr(fmt.Errorf("%s not implemented", earn.Type))
 			}
 		}
 
