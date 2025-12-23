@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pdcgo/schema/services/order_iface/v1"
@@ -176,7 +177,9 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 				db_models.AdjCommision,
 				db_models.AdjCompensation,
 				db_models.AdjUnknown,
+				db_models.AdjPremi,
 				db_models.AdjUnknownAdj:
+				streamlog("add adjustment %s %s", earn.Type, earn.Description)
 				paymentCreateRes, err = w.orderService.MpPaymentCreate(ctx, &connect.Request[order_iface.MpPaymentCreateRequest]{
 					Msg: req,
 				})
@@ -184,6 +187,9 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 				if err != nil {
 					return streamerr(err)
 				}
+
+			default:
+				return streamerr(fmt.Errorf("[withdrawal] %s not implemented", earn.Type))
 
 			}
 
@@ -206,4 +212,18 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 	}
 
 	return nil
+}
+
+func (w *wdServiceImpl) getOrderAdjustmentMultiRegion(orderID uint, before, after time.Time) ([]*db_models.OrderAdjustment, error) {
+	// var err error
+	// var adjs []*db_models.OrderAdjustment
+	adjs := []*db_models.OrderAdjustment{}
+	w.db.
+		Model(&db_models.OrderAdjustment{}).
+		Where("order_id = ?", orderID).
+		Where("is_multi_region = ?", true).
+		Where("at BETWEEN ? AND ?", before, after).
+		Find(&adjs)
+
+	return adjs, nil
 }

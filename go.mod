@@ -10,8 +10,8 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/google/wire v0.7.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2
-	github.com/pdcgo/schema v1.0.85
-	github.com/pdcgo/shared v1.0.111
+	github.com/pdcgo/schema v1.0.87
+	github.com/pdcgo/shared v1.0.112
 	github.com/stretchr/testify v1.11.1
 	github.com/xuri/excelize/v2 v2.9.1
 	golang.org/x/net v0.44.0
