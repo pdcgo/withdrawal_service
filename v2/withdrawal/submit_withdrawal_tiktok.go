@@ -85,8 +85,7 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 	source := datasource.NewV2TiktokWdXls(io.NopCloser(bytes.NewReader(data)))
 	wds, err := source.IterateValidWithdrawal()
 	if err != nil {
-		streamlog(err.Error())
-		return err
+		return streamerr(err)
 	}
 
 	streamlog("connecting to revenue service...")

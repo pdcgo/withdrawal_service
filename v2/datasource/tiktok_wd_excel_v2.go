@@ -34,31 +34,26 @@ func (s *v2TiktokWdImpl) IterateValidWithdrawal() ([]*WdSet, error) {
 
 	for _, wd := range wds {
 
-		notFundedAmount := wd.NotFundedAmount()
-
-		if notFundedAmount < 0 {
-			validEarning, err := wd.TraceValidEarning()
-			if err != nil {
-
-				if wd.IsLast {
-					return result, nil
-				}
-
-				return result, err
+		fundedEarning, _, err := wd.FundedEarning()
+		if err != nil {
+			if wd.IsLast {
+				break
 			}
 
-			result = append(result, &WdSet{
-				Withdrawal:  wd.Withdrawal,
-				WdSetBefore: wd.WdSetBefore,
-				WdSetNext:   wd.WdSetNext,
-				Earning:     validEarning,
-				IsLast:      wd.IsLast,
-			})
+			return result, err
 		}
 
-		if notFundedAmount == 0 {
-			result = append(result, wd)
+		if len(fundedEarning) == 0 {
+			return result, wd.WithErrf("funded entry empty")
 		}
+
+		result = append(result, &WdSet{
+			Withdrawal:  wd.Withdrawal,
+			WdSetBefore: wd.WdSetBefore,
+			WdSetNext:   wd.WdSetNext,
+			Earning:     fundedEarning,
+			IsLast:      wd.IsLast,
+		})
 	}
 
 	return result, nil

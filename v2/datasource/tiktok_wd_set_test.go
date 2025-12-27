@@ -47,7 +47,7 @@ func TestComboFileExcel(t *testing.T) {
 }
 
 func TestToktokSini1Bulan(t *testing.T) {
-	fname := "../../test/assets/overlapping_earning.xlsx"
+	fname := "../../test/assets/tiktok/overlapping_earning.xlsx"
 	file, err := os.Open(fname)
 	assert.Nil(t, err)
 	defer file.Close()
@@ -69,7 +69,7 @@ func TestToktokSini1Bulan(t *testing.T) {
 		case -3958796:
 			assert.Len(t, wd.Earning, 2)
 
-			earning, err := wd.TraceValidEarning()
+			earning, _, err := wd.FundedEarning()
 			assert.Nil(t, err)
 			assert.Equal(t, math.Abs(wd.Withdrawal.Amount), earning.GetAmount())
 

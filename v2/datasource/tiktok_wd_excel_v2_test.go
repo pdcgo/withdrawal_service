@@ -97,3 +97,32 @@ func TestAdditionalCampaign(t *testing.T) {
 		}
 	}
 }
+
+func TestNiko(t *testing.T) {
+	fname := "../../test/assets/tiktok/niko_lape_full.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	wds, err := importer.IterateWithdrawal()
+	assert.Nil(t, err)
+
+	for _, wd := range wds {
+		_, _, err := wd.FundedEarning()
+		assert.Nil(t, err)
+	}
+
+	vwds, err := importer.IterateValidWithdrawal()
+	assert.Nil(t, err)
+
+	assert.Len(t, vwds, 4)
+
+	// for _, wd := range wds {
+	// 	for _, earn := range wd.Earning {
+	// 		for _, invo := range earn.Involist {
+	// 			t.Log(invo.Type)
+	// 		}
+	// 	}
+	// }
+}

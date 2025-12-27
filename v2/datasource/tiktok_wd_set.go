@@ -57,6 +57,64 @@ type WdSet struct {
 	IsLast      bool
 }
 
+func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
+	var err error
+
+	earninglist := EarningList{}
+	notfundedlist := EarningList{}
+
+	i := len(wd.Earning)
+	var fundedAmount float64 // dont use this for checking further
+	wdAmount := math.Abs(wd.Withdrawal.Amount)
+
+	for i > 0 {
+		i--
+		earning := wd.Earning[i]
+		fundedAmount += earning.Earning.Amount
+		if fundedAmount <= wdAmount {
+			earninglist = append(earninglist, earning)
+		} else {
+			notfundedlist = append(notfundedlist, earning)
+		}
+	}
+
+	if earninglist.GetAmount() != wdAmount {
+		if len(wd.Earning) == len(earninglist) {
+			if wd.WdSetBefore != nil {
+				before := wd.WdSetBefore
+
+				_, beforeNotFunded, err := before.FundedEarning()
+
+				if err != nil {
+					return earninglist, notfundedlist, err
+				}
+
+				earninglist = append(beforeNotFunded, earninglist...)
+				if earninglist.GetAmount() != wdAmount {
+					return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
+				}
+
+				return earninglist, notfundedlist, nil
+
+			} else {
+				if !wd.IsLast {
+					earn := wd.Earning[len(wd.Earning)-1]
+					err = fmt.Errorf("butuh range lebih lama dari %s", earn.Earning.RequestTime.String())
+					return earninglist, notfundedlist, err
+				}
+			}
+		}
+
+		return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
+	}
+
+	return earninglist, notfundedlist, nil
+}
+
+func (w *WdSet) WithErrf(format string, a ...any) error {
+	return w.WithErr(fmt.Errorf(format, a...))
+}
+
 func (w *WdSet) WithErr(err error) error {
 	return fmt.Errorf(
 		"withdrawal %.3f at %s error %s",
@@ -66,62 +124,62 @@ func (w *WdSet) WithErr(err error) error {
 	)
 }
 
-func (wd *WdSet) TraceValidEarning() (EarningList, error) {
-	result := EarningList{}
-	result = append(result, wd.Earning...)
-	notFundedAmount := wd.NotFundedAmount()
+// func (wd *WdSet) TraceValidEarning() (EarningList, error) {
+// 	result := EarningList{}
+// 	result = append(result, wd.Earning...)
+// 	notFundedAmount := wd.NotFundedAmount()
 
-	if notFundedAmount < 0 {
+// 	if notFundedAmount < 0 {
 
-		before := wd.WdSetBefore
-		if before == nil {
-			return nil, wd.WithErr(errors.New("before not found"))
-		}
+// 		before := wd.WdSetBefore
+// 		if before == nil {
+// 			return nil, wd.WithErr(errors.New("before not found"))
+// 		}
 
-		// log.Println("getting fund", before.Withdrawal.Amount, len(before.Earning))
-		_, notfunded, err := before.FundedEarning()
-		if err != nil {
-			return result, err
-		}
+// 		// log.Println("getting fund", before.Withdrawal.Amount, len(before.Earning))
+// 		_, notfunded, err := before.FundedEarning()
+// 		if err != nil {
+// 			return result, err
+// 		}
 
-		// log.Println(before.)
-		// log.Println(notFundedAmount, notfunded.GetAmount())
+// 		// log.Println(before.)
+// 		// log.Println(notFundedAmount, notfunded.GetAmount())
 
-		if notfunded.GetAmount() == math.Abs(notFundedAmount) {
-			result = append(result, notfunded...)
-		}
+// 		if notfunded.GetAmount() == math.Abs(notFundedAmount) {
+// 			result = append(result, notfunded...)
+// 		}
 
-	}
+// 	}
 
-	if notFundedAmount > 0 {
+// 	if notFundedAmount > 0 {
 
-	}
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
 func (wd *WdSet) NotFundedAmount() float64 {
 	return wd.Earning.GetAmount() - math.Abs(wd.Withdrawal.Amount)
 }
 
-func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
-	var earning EarningList
-	var notEarning EarningList
+// func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
+// 	var earning EarningList
+// 	var notEarning EarningList
 
-	wdAbsAmount := math.Abs(wd.Withdrawal.Amount)
-	err := ComboIndices(len(wd.Earning), func(index []int) error {
+// 	wdAbsAmount := math.Abs(wd.Withdrawal.Amount)
+// 	err := ComboIndices(len(wd.Earning), func(index []int) error {
 
-		dd := wd.Earning.SubsetIndex(index, false)
-		if dd.GetAmount() == wdAbsAmount {
-			earning = dd
-			notEarning = wd.Earning.SubsetIndex(index, true)
-			return ErrComboStop
-		}
-		return nil
-	})
+// 		dd := wd.Earning.SubsetIndex(index, false)
+// 		if dd.GetAmount() == wdAbsAmount {
+// 			earning = dd
+// 			notEarning = wd.Earning.SubsetIndex(index, true)
+// 			return ErrComboStop
+// 		}
+// 		return nil
+// 	})
 
-	return earning, notEarning, err
-}
+// 	return earning, notEarning, err
+// }
 
 var ErrComboStop error = errors.New("combo stop")
 
