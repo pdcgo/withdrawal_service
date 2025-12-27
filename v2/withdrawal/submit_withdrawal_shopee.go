@@ -117,7 +117,7 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 				ShopId: pay.MpSubmit.MpId,
 				At:     timestamppb.New(wd.Withdrawal.TransactionDate),
 				Amount: math.Abs(wdAmount),
-				Desc:   fmt.Sprintf("tiktok withdrawal withdrawal amount %.3f at %s", wdAmount, timeStr),
+				Desc:   fmt.Sprintf("shopee withdrawal amount %.3f at %s", wdAmount, timeStr),
 			},
 		})
 
