@@ -37,7 +37,7 @@ func (s *v2TiktokWdImpl) IterateValidWithdrawal() ([]*WdSet, error) {
 		fundedEarning, _, err := wd.FundedEarning()
 		if err != nil {
 			if wd.IsLast {
-				break
+				return result, nil
 			}
 
 			return result, err

@@ -77,21 +77,43 @@ func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
 			notfundedlist = append(notfundedlist, earning)
 		}
 	}
-
 	if earninglist.GetAmount() != wdAmount {
 		if len(wd.Earning) == len(earninglist) {
+			var beforeNotFunded EarningList
+
 			if wd.WdSetBefore != nil {
 				before := wd.WdSetBefore
+				if before.IsLast {
+					onbeforeAmount := wdAmount - earninglist.GetAmount()
+					if onbeforeAmount < 0 {
+						return earninglist, notfundedlist, wd.WithErrf("onbefore negative")
+					}
 
-				_, beforeNotFunded, err := before.FundedEarning()
+					var needBeforeAmount float64
+					for _, earn := range before.Earning {
+						needBeforeAmount += earn.Earning.Amount
+						if needBeforeAmount <= onbeforeAmount {
+							beforeNotFunded = append(beforeNotFunded, earn)
+						} else {
+							break
+						}
+					}
+					if onbeforeAmount != beforeNotFunded.GetAmount() {
+						// fmt.Printf("%.3f - %.3f - %d\n\n\n\n", needBeforeAmount, onbeforeAmount, len(earninglist))
+						return earninglist, notfundedlist, errors.New("need before not same")
+					}
 
-				if err != nil {
-					return earninglist, notfundedlist, err
+				} else {
+					_, beforeNotFunded, err = before.FundedEarning()
+
+					if err != nil {
+						return earninglist, notfundedlist, err
+					}
 				}
 
 				earninglist = append(beforeNotFunded, earninglist...)
 				if earninglist.GetAmount() != wdAmount {
-					return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
+					return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("ls cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
 				}
 
 				return earninglist, notfundedlist, nil

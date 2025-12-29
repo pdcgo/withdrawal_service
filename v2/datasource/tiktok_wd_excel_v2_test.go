@@ -126,3 +126,77 @@ func TestNiko(t *testing.T) {
 	// 	}
 	// }
 }
+
+func TestNikoSisaInLast(t *testing.T) {
+	fname := "../../test/assets/tiktok/niko_sisa_onlast.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	wds, err := importer.IterateWithdrawal()
+	assert.Nil(t, err)
+
+	for _, wd := range wds {
+		_, _, err := wd.FundedEarning()
+		switch wd.Withdrawal.Amount {
+		case -1745896:
+			assert.Nil(t, err)
+		default:
+			assert.NotNil(t, err)
+		}
+	}
+
+	vwds, err := importer.IterateValidWithdrawal()
+	assert.Nil(t, err)
+
+	assert.Len(t, vwds, 1)
+
+	// for _, wd := range wds {
+	// 	for _, earn := range wd.Earning {
+	// 		for _, invo := range earn.Involist {
+	// 			t.Log(invo.Type)
+	// 		}
+	// 	}
+	// }
+}
+
+func TestPivanFundInvalid(t *testing.T) {
+	fname := "../../test/assets/tiktok/pivan_fund_invalid.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	wds, err := importer.IterateWithdrawal()
+	assert.Nil(t, err)
+
+	for _, wd := range wds {
+		funded, notFunded, _ := wd.FundedEarning()
+		switch wd.Withdrawal.Amount {
+		case -532565:
+			assert.Len(t, wd.Earning, 1)
+			assert.Len(t, funded, 1)
+			assert.Len(t, notFunded, 0)
+		case -1713003:
+			assert.Len(t, wd.Earning, 4)
+			// debugtool.LogJson(wd.Earning)
+
+		}
+
+		// assert.Nil(t, err)
+	}
+
+	// vwds, err := importer.IterateValidWithdrawal()
+	// assert.Nil(t, err)
+
+	// assert.Len(t, vwds, 1)
+
+	// for _, wd := range wds {
+	// 	for _, earn := range wd.Earning {
+	// 		for _, invo := range earn.Involist {
+	// 			t.Log(invo.Type)
+	// 		}
+	// 	}
+	// }
+}

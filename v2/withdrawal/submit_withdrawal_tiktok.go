@@ -3,7 +3,6 @@ package withdrawal
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -211,7 +210,14 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 					}
 
 				case db_models.AdjReturn:
-					streamerr(errors.New("return not implemented"))
+					streamlog("add adjustment %s %.3f %s", inv.Type, inv.Amount, inv.ExternalOrderID)
+					paymentCreateRes, err = w.orderService.MpPaymentCreate(ctx, &connect.Request[order_iface.MpPaymentCreateRequest]{
+						Msg: req,
+					})
+
+					if err != nil {
+						return streamerr(err)
+					}
 				// err = revenueStream.Send(&revenue_iface.RevenueStreamRequest{
 				// 	Event: &revenue_iface.RevenueStreamEvent{},
 				// })
