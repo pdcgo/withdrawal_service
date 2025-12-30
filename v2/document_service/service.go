@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"net/http"
 	"time"
 
@@ -77,7 +78,12 @@ func (w *wdDocServiceImpl) Upload(
 		return connect.NewResponse(&result), errors.New("invalid type")
 	}
 
-	fname, err := w.getFilename(uint(pay.TeamId), uint(pay.MarketplaceId))
+	// getting hash
+	h := fnv.New64a()
+	h.Write(pay.Content)
+	hres := h.Sum64()
+
+	fname, err := w.getFilename(uint(pay.TeamId), uint(pay.MarketplaceId), hres)
 
 	if err != nil {
 		return connect.NewResponse(&result), err
@@ -137,7 +143,7 @@ func (w *wdDocServiceImpl) Upload(
 	return connect.NewResponse(&result), nil
 }
 
-func (w *wdDocServiceImpl) getFilename(teamID uint, shopID uint) (string, error) {
+func (w *wdDocServiceImpl) getFilename(teamID uint, shopID uint, hash uint64) (string, error) {
 	mp := db_models.Marketplace{}
 	team := db_models.Team{}
 	ts := time.Now()
@@ -153,7 +159,7 @@ func (w *wdDocServiceImpl) getFilename(teamID uint, shopID uint) (string, error)
 		return "", err
 	}
 
-	fname := fmt.Sprintf("%s_%s_%s", team.TeamCode, mp.MpUsername, tstring)
+	fname := fmt.Sprintf("%s_%s_%s_%d", team.TeamCode, mp.MpUsername, tstring, hash)
 
 	return fname, nil
 }

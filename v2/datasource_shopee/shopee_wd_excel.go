@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 
 	"github.com/pdcgo/shared/db_models"
-	"github.com/pdcgo/shared/pkg/debugtool"
 	"github.com/pdcgo/shared/pkg/excel_reader"
 	"github.com/pdcgo/withdrawal_service/models"
 	"github.com/xuri/excelize/v2"
@@ -72,9 +72,9 @@ func (s *shopeeXlsImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, er
 			})
 		}
 
-		if notFundedAmount > 0 {
-			debugtool.LogJson(wd)
-		}
+		// if notFundedAmount > 0 {
+		// 	debugtool.LogJson(wd)
+		// }
 
 		if notFundedAmount == 0 {
 			result = append(result, wd)
@@ -182,10 +182,22 @@ func (s *shopeeXlsImpl) Iterate(ctx context.Context, handler func(item *db_model
 		if err != nil {
 			return err
 		}
+
+		var isOtherRegion bool
+		var region string
+
 		var tipe db_models.AdjustmentType = db_models.AdjOrderFund
 		switch item.Type {
 		case models.WdTxFromOrder:
 			tipe = db_models.AdjOrderFund
+
+		case "Program Ekspor Shopee FLEXI":
+			tipe = db_models.AdjOrderFund
+			isOtherRegion = true
+			extern := strings.Split(item.ExternalOrderID, "-")
+			region = extern[0]
+			item.ExternalOrderID = extern[1]
+
 		case models.WdTxFund:
 			switch item.Status {
 			case "Sedang Diproses":
@@ -248,6 +260,8 @@ func (s *shopeeXlsImpl) Iterate(ctx context.Context, handler func(item *db_model
 			Amount:          item.Amount,
 			BalanceAfter:    item.BalanceAfter,
 			Type:            tipe,
+			IsOtherRegion:   isOtherRegion,
+			Region:          region,
 		})
 
 	})

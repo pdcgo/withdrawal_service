@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pdcgo/schema/services/order_iface/v1"
@@ -54,16 +53,8 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 		return err
 	}
 
-	streamlog("membaca file..")
-	var data []byte
-	data, err = w.storage.GetContent(ctx, pay.ResourceUri)
-	if err != nil {
-		return streamerr(fmt.Errorf("error reading %s", pay.ResourceUri))
-	}
-
-	// open di datasource baru
-	streamlog("parsing file..")
-	source := datasource_shopee.NewShopeeXlsWithdrawal(io.NopCloser(bytes.NewReader(data)))
+	streamlog("membaca dan parsing file..")
+	source, err := w.getSource(ctx, pay)
 
 	streamlog("check toko dan marketplace ..")
 	var mp *db_models.Marketplace
@@ -139,15 +130,16 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 			}
 
 			req := &order_iface.MpPaymentCreateRequest{
-				TeamId:  uint64(ord.TeamID),
-				OrderId: uint64(ord.ID),
-				ShopId:  uint64(mp.ID),
-				Type:    string(earn.Type),
-				Amount:  earn.Amount,
-				Desc:    earn.Description,
-				At:      timestamppb.New(earn.TransactionDate),
-				WdAt:    timestamppb.New(wd.Withdrawal.TransactionDate),
-				Source:  order_iface.MpPaymentSource_MP_PAYMENT_SOURCE_IMPORTER,
+				TeamId:        uint64(ord.TeamID),
+				OrderId:       uint64(ord.ID),
+				ShopId:        uint64(mp.ID),
+				Type:          string(earn.Type),
+				Amount:        earn.Amount,
+				Desc:          earn.Description,
+				At:            timestamppb.New(earn.TransactionDate),
+				WdAt:          timestamppb.New(wd.Withdrawal.TransactionDate),
+				Source:        order_iface.MpPaymentSource_MP_PAYMENT_SOURCE_IMPORTER,
+				IsMultiRegion: earn.IsOtherRegion,
 			}
 
 			var paymentCreateRes *connect.Response[order_iface.MpPaymentCreateResponse]
@@ -177,6 +169,7 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 				db_models.AdjCommision,
 				db_models.AdjCompensation,
 				db_models.AdjUnknown,
+				db_models.AdjPackaging,
 				db_models.AdjPremi,
 				db_models.AdjUnknownAdj:
 				streamlog("add adjustment %s %s", earn.Type, earn.Description)
@@ -214,16 +207,53 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 	return nil
 }
 
-func (w *wdServiceImpl) getOrderAdjustmentMultiRegion(orderID uint, before, after time.Time) ([]*db_models.OrderAdjustment, error) {
-	// var err error
-	// var adjs []*db_models.OrderAdjustment
-	adjs := []*db_models.OrderAdjustment{}
-	w.db.
-		Model(&db_models.OrderAdjustment{}).
-		Where("order_id = ?", orderID).
-		Where("is_multi_region = ?", true).
-		Where("at BETWEEN ? AND ?", before, after).
-		Find(&adjs)
+// func (w *wdServiceImpl) getOrderAdjustmentMultiRegion(orderID uint, before, after time.Time) ([]*db_models.OrderAdjustment, error) {
+// 	// var err error
+// 	// var adjs []*db_models.OrderAdjustment
+// 	adjs := []*db_models.OrderAdjustment{}
+// 	w.db.
+// 		Model(&db_models.OrderAdjustment{}).
+// 		Where("order_id = ?", orderID).
+// 		Where("is_multi_region = ?", true).
+// 		Where("at BETWEEN ? AND ?", before, after).
+// 		Find(&adjs)
 
-	return adjs, nil
+// 	return adjs, nil
+// }
+
+type Source interface {
+	GetShopUsername() (string, error)
+	GetRefIDs() (datasource_shopee.OrderRefList, error)
+	ValidWithdrawal(ctx context.Context) ([]*datasource_shopee.ShopeeWdSet, error)
+}
+
+func (w *wdServiceImpl) getSource(ctx context.Context, pay *withdrawal_iface.SubmitWithdrawalShopeeRequest) (Source, error) {
+	var err error
+	if len(pay.ResourceUris) == 0 {
+		// dengan single file
+		var data []byte
+		data, err = w.storage.GetContent(ctx, pay.ResourceUri)
+		if err != nil {
+			return nil, fmt.Errorf("error reading %s", pay.ResourceUri)
+		}
+
+		source := datasource_shopee.NewShopeeXlsWithdrawal(io.NopCloser(bytes.NewReader(data)))
+		return source, err
+	}
+
+	readers := []io.ReadCloser{}
+	for _, uri := range pay.ResourceUris {
+		var data []byte
+		data, err = w.storage.GetContent(ctx, uri)
+		if err != nil {
+			return nil, fmt.Errorf("error reading %s", uri)
+		}
+
+		readers = append(readers, io.NopCloser(bytes.NewReader(data)))
+
+	}
+
+	source, err := datasource_shopee.NewShopeeXlsMultiFile(readers)
+
+	return source, err
 }
