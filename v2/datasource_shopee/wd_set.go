@@ -51,16 +51,39 @@ func (wd *ShopeeWdSet) FundedEarning() (EarningList, error) {
 		}
 	}
 
-	for i < len(wd.Earning) {
+	// fmt.Printf("funded %.3f sddd \n", fundedAmount)
+	c := len(wd.Earning) - 1
+	// log.Println("cc", len(wd.Earning), wd.Withdrawal.Amount)
+	for c >= i {
 
-		fundedAmount += wd.Earning[i].Amount
+		fundedAmount += wd.Earning[c].Amount
+
 		if fundedAmount <= wdAmount {
-			// fmt.Printf("funded %.3f - %d - %.3f \n", wd.Withdrawal.Amount, i, wd.Earning[i].Amount)
-			earnlist = append(earnlist, wd.Earning[i])
-			i++
+			// fmt.Printf("funded %.3f - %d - %.3f - %.3f \n", wd.Withdrawal.Amount, c, wd.Earning[c].Amount, fundedAmount)
+			// earnlist = append(earnlist, wd.Earning[c])
+			earnlist = append([]*db_models.InvoItem{wd.Earning[c]}, earnlist...)
+			c--
 		} else {
 			break
 		}
+
+		if fundedAmount == wdAmount {
+			break
+		}
+
+		// if fundedAmount > wdAmount {
+		// 	if wd.Earning[i].Amount < 0 {
+		// 		fmt.Printf("dfunded %.3f - %d - %.3f - %.3f \n", wd.Withdrawal.Amount, i, wd.Earning[i].Amount, fundedAmount)
+		// 		earnlist = append(earnlist, wd.Earning[i])
+		// 		i++
+		// 		continue
+		// 	} else {
+		// 		fmt.Printf("dskip %.3f - %d - %.3f - %.3f \n", wd.Withdrawal.Amount, i, wd.Earning[i].Amount, fundedAmount)
+		// 		break
+		// 	}
+
+		// }
+
 	}
 
 	if wd.WdSetBefore != nil {
@@ -81,6 +104,7 @@ func (wd *ShopeeWdSet) FundedEarning() (EarningList, error) {
 	}
 
 	if wdAmount != earnlist.GetAmount() {
+		// debugtool.LogJson(earnlist)
 		return earnlist, wd.WithErr(fmt.Errorf("cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earnlist.GetAmount()))
 	}
 

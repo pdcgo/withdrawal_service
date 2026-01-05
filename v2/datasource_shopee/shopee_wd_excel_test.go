@@ -76,3 +76,25 @@ func TestLuxySisa(t *testing.T) {
 	_, err = importer.ValidWithdrawal(t.Context())
 	assert.Nil(t, err)
 }
+
+func TestLuxySisaErr2026(t *testing.T) {
+	fname := "../../test/assets/shopee/shopee_wd_tidak_cocok.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource_shopee.NewShopeeXlsWithdrawal(file)
+	wds, err := importer.Withdrawals(t.Context())
+	assert.Nil(t, err)
+
+	for _, wd := range wds {
+		switch wd.Withdrawal.Amount {
+		case -579597:
+			assert.Len(t, wd.Earning, 13)
+		}
+
+	}
+
+	_, err = importer.ValidWithdrawal(t.Context())
+	assert.Nil(t, err)
+}
