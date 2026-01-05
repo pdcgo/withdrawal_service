@@ -61,12 +61,18 @@ func (s *v2TiktokWdImpl) IterateValidWithdrawal() ([]*WdSet, error) {
 
 func (s *v2TiktokWdImpl) IterateWithdrawal() ([]*WdSet, error) {
 	var err error
+
+	details, err := s.DetailSet()
+	if err != nil {
+		return nil, err
+	}
+
 	wds := []*WdSet{}
 
-	orderMapDate, err := s.GroupByDate()
-	if err != nil {
-		return wds, err
-	}
+	// orderMapDate, err := s.GroupByDate()
+	// if err != nil {
+	// 	return wds, err
+	// }
 
 	startProcessing := false
 
@@ -103,21 +109,24 @@ func (s *v2TiktokWdImpl) IterateWithdrawal() ([]*WdSet, error) {
 			return err
 		}
 
-		var ok bool
 		var invos InvoItemList
 
-		invos, ok = orderMapDate[item.RequestTime.Unix()]
-		if !ok {
-			invos = []*db_models.InvoItem{}
-		}
-
 		switch item.Type {
-		case "Earnings", "GMV Pay Deduction":
-			if item.Type == "GMV Pay Deduction" {
-				invos = invos.AdsPayment()
-			} else {
-				invos = invos.OrderPayment()
+		case "Earnings":
+			invos, err = details.GetOrderEarning(item.RequestTime)
+			if err != nil {
+				return err
 			}
+
+			if wd != nil {
+				wd.Earning = append(wd.Earning, &Earning{
+					Earning:  &item,
+					Involist: invos,
+				})
+			}
+
+		case "GMV Pay Deduction":
+			invos, err = details.GetGmvDeduction(item.RequestTime, item.Amount)
 
 			if item.Amount != invos.GetAmount() {
 				return fmt.Errorf(
@@ -173,15 +182,15 @@ func (invs InvoItemList) AdsPayment() InvoItemList {
 	return hasil
 }
 
-func (invs InvoItemList) OrderPayment() InvoItemList {
-	hasil := InvoItemList{}
-	for _, inv := range invs {
-		if inv.Type != db_models.AdsPayment {
-			hasil = append(hasil, inv)
-		}
-	}
-	return hasil
-}
+// func (invs InvoItemList) OrderPayment() InvoItemList {
+// 	hasil := InvoItemList{}
+// 	for _, inv := range invs {
+// 		if inv.Type != db_models.AdsPayment {
+// 			hasil = append(hasil, inv)
+// 		}
+// 	}
+// 	return hasil
+// }
 
 func (invs InvoItemList) GetAmount() float64 {
 	hasil := 0.00
@@ -199,22 +208,35 @@ func (invs InvoItemList) GetOrderIDs() []string {
 	return hasil
 }
 
-func (s *v2TiktokWdImpl) GroupByDate() (map[int64]InvoItemList, error) {
+func (s *v2TiktokWdImpl) DetailSet() (*DetailSet, error) {
 	var err error
-	hasil := map[int64]InvoItemList{}
+	result := DetailSet{[]*db_models.InvoItem{}, map[string]bool{}}
 
 	err = s.IterateOrder(func(invo *db_models.InvoItem) error {
-		hasil[invo.TransactionDate.Unix()] = append(hasil[invo.TransactionDate.Unix()], invo)
+		result.Data = append(result.Data, invo)
 		return nil
 	})
 
-	if err != nil {
-		return hasil, err
-	}
-
-	return hasil, err
-
+	return &result, err
 }
+
+// func (s *v2TiktokWdImpl) GroupByDate() (map[int64]InvoItemList, error) {
+// 	var err error
+// 	hasil := map[int64]InvoItemList{}
+
+// 	err = s.IterateOrder(func(invo *db_models.InvoItem) error {
+// 		log.Println(invo.Type)
+// 		hasil[invo.TransactionDate.Unix()] = append(hasil[invo.TransactionDate.Unix()], invo)
+// 		return nil
+// 	})
+
+// 	if err != nil {
+// 		return hasil, err
+// 	}
+
+// 	return hasil, err
+
+// }
 
 func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) error) error {
 	return s.iterateSheet("Order details", func(data []string) error {
@@ -243,6 +265,7 @@ func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) err
 
 		case "GMV Payment for TikTok Ads":
 			tipe = db_models.AdsPayment
+			item.ExternalOrderID = data[0]
 
 		case "Logistics reimbursement":
 			if item.SettlementAmount > 0 {

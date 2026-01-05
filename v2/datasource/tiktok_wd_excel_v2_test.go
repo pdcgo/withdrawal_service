@@ -161,6 +161,18 @@ func TestNikoSisaInLast(t *testing.T) {
 	// }
 }
 
+func TestDeductionGmv(t *testing.T) {
+	fname := "../../test/assets/tiktok/pay_deduction.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	_, err = importer.IterateWithdrawal()
+	assert.Nil(t, err)
+
+}
+
 func TestPivanFundInvalid(t *testing.T) {
 	fname := "../../test/assets/tiktok/pivan_fund_invalid.xlsx"
 	file, err := os.Open(fname)
