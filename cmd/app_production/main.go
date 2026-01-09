@@ -19,7 +19,6 @@ import (
 	"github.com/pdcgo/shared/custom_connect"
 	"github.com/pdcgo/shared/db_connect"
 	"github.com/pdcgo/shared/interfaces/authorization_iface"
-	"github.com/pdcgo/shared/pkg/cloud_logging"
 	"github.com/pdcgo/shared/pkg/streampipe"
 	"github.com/pdcgo/shared/pkg/ware_cache"
 	withdrawal_service_v1 "github.com/pdcgo/withdrawal_service"
@@ -168,7 +167,7 @@ func NewApp(
 }
 
 func main() {
-	cloud_logging.SetCloudLoggingDefault()
+	// cloud_logging.SetCloudLoggingDefault()
 	app, err := InitializeApp()
 	if err != nil {
 		panic(err)

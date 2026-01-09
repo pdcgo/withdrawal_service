@@ -159,7 +159,7 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 			for _, inv := range earning.Involist {
 
 				// getting order
-				var ord *db_models.Order
+				var ord *db_models.Order = &db_models.Order{}
 				switch inv.Type {
 				case db_models.AdsPayment:
 				case db_models.AdjUnknown:
@@ -175,7 +175,7 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 				}
 
 				req := &order_iface.MpPaymentCreateRequest{
-					TeamId:  uint64(ord.TeamID),
+					TeamId:  pay.TeamId,
 					OrderId: uint64(ord.ID),
 					ShopId:  uint64(mp.ID),
 					Type:    string(inv.Type),
@@ -309,6 +309,10 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 
 				default:
 					return streamerrf("%s not implemented", inv.Type)
+				}
+
+				if paymentCreateRes == nil {
+					continue
 				}
 
 				if paymentCreateRes.Msg.IsReceivableCreatedAdjustment {
