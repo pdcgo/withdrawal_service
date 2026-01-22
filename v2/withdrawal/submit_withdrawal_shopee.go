@@ -171,6 +171,7 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 				db_models.AdjUnknown,
 				db_models.AdjPackaging,
 				db_models.AdjPremi,
+				db_models.AdjShipping,
 				db_models.AdjUnknownAdj:
 				streamlog("add adjustment %s %s", earn.Type, earn.Description)
 				paymentCreateRes, err = w.orderService.MpPaymentCreate(ctx, &connect.Request[order_iface.MpPaymentCreateRequest]{
