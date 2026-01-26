@@ -9,6 +9,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestShippingInsurance(t *testing.T) {
+	fname := "../../test/assets/tiktok/shipping_issurance.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	wds, err := importer.IterateWithdrawal()
+
+	for _, wd := range wds {
+		for _, earn := range wd.Earning {
+			for _, invo := range earn.Involist {
+				if invo.Type != db_models.AdjOrderFund {
+					t.Log(invo.Type, invo.Description)
+				}
+			}
+		}
+	}
+	assert.Nil(t, err)
+}
+
 func TestWdSalahTarik(t *testing.T) {
 	fname := "../../test/assets/tiktok/salah_tarik.xlsx"
 	file, err := os.Open(fname)

@@ -163,6 +163,16 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 				switch inv.Type {
 				case db_models.AdsPayment:
 				case db_models.AdjUnknown:
+					if inv.Description == "Shipping insurance compensation" {
+						ord, err = w.orderRepo.OrderByExternalID(inv.ExternalOrderID)
+						if err != nil {
+							return err
+						}
+
+						if ord.ID == 0 {
+							return streamerrf("cannot get order by order id %s", inv.ExternalOrderID)
+						}
+					}
 				case db_models.InternalWdError:
 				default:
 					ord, err = w.orderRepo.OrderByExternalID(inv.ExternalOrderID)
