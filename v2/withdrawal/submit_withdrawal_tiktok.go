@@ -163,6 +163,7 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 				switch inv.Type {
 				case db_models.AdsPayment:
 				case db_models.AdjUnknown:
+				case db_models.InternalWdError:
 				default:
 					ord, err = w.orderRepo.OrderByExternalID(inv.ExternalOrderID)
 					if err != nil {
@@ -189,6 +190,17 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 				var paymentCreateRes *connect.Response[order_iface.MpPaymentCreateResponse]
 
 				switch inv.Type {
+				case db_models.InternalWdError:
+					continue
+					// streamlog("human error %s to order %s amount %.3f", inv.Type, inv.ExternalOrderID, inv.Amount)
+					// paymentCreateRes, err = w.orderService.MpPaymentCreate(ctx, &connect.Request[order_iface.MpPaymentCreateRequest]{
+					// 	Msg: req,
+					// })
+
+					// if err != nil {
+					// 	return streamerr(err)
+					// }
+
 				case db_models.AdjOrderFund:
 					if inv.Amount < 0 {
 						return streamerrf("amount fund negative %s", inv.ExternalOrderID)

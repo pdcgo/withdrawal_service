@@ -10,8 +10,8 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.11
 	github.com/google/wire v0.7.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2
-	github.com/pdcgo/schema v1.0.92
-	github.com/pdcgo/shared v1.0.114
+	github.com/pdcgo/schema v1.0.94
+	github.com/pdcgo/shared v1.0.121
 	github.com/stretchr/testify v1.11.1
 	github.com/xuri/excelize/v2 v2.9.1
 	golang.org/x/net v0.47.0
@@ -77,7 +77,6 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
-	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
 	github.com/google/flatbuffers v25.9.23+incompatible // indirect

@@ -282,7 +282,12 @@ func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) err
 			}
 
 		default:
-			tipe = db_models.AdjUnknown
+			if strings.HasPrefix(item.Type, "wderror") {
+				tipe = db_models.InternalWdError
+			} else {
+				tipe = db_models.AdjUnknown
+			}
+
 		}
 
 		invo := &db_models.InvoItem{

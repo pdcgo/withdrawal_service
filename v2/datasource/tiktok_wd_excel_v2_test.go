@@ -9,6 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestWdSalahTarik(t *testing.T) {
+	fname := "../../test/assets/tiktok/salah_tarik.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	_, err = importer.IterateWithdrawal()
+	assert.Nil(t, err)
+}
+
 func TestTiktokDatasource(t *testing.T) {
 	fname := "../../test/assets/pzen_complete_salah.xlsx"
 	file, err := os.Open(fname)
