@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,20 +10,8 @@ import (
 	"github.com/pdcgo/shared/authorization"
 	"github.com/pdcgo/shared/configs"
 	"github.com/pdcgo/shared/custom_connect"
-	"github.com/pdcgo/shared/interfaces/withdrawal_iface"
 	"github.com/pdcgo/shared/pkg/secret"
 )
-
-type doubleWd struct {
-	withdrawal_iface.UnimplementedDoubleWDServiceServer
-}
-
-// HealthCheck implements withdrawal_iface.DoubleWDServiceServer.
-func (d *doubleWd) HealthCheck(context.Context, *withdrawal_iface.EmptyRequest) (*withdrawal_iface.CommonResponse, error) {
-	return &withdrawal_iface.CommonResponse{
-		Message: "asdasdasda teast msg",
-	}, errors.New("asdasdasdasd")
-}
 
 func IgnoreRoute(next http.Handler, jwtPhrase string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -53,10 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	ctx := context.Background()
 	mux := runtime.NewServeMux()
-
-	withdrawal_iface.RegisterDoubleWDServiceHandlerServer(ctx, mux, &doubleWd{})
 
 	port := os.Getenv("PORT")
 	host := ""
