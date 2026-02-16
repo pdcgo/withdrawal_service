@@ -3,6 +3,7 @@ package datasource
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math"
 )
 
@@ -16,6 +17,7 @@ type EarningList []*Earning
 func (e EarningList) GetAmount() float64 {
 	hasil := 0.00
 	for _, earning := range e {
+		log.Println(earning.Earning.Type)
 		invoAmount := earning.Involist.GetAmount()
 		hasil += invoAmount
 	}
@@ -67,16 +69,23 @@ func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
 	var fundedAmount float64 // dont use this for checking further
 	wdAmount := math.Abs(wd.Withdrawal.Amount)
 
-	for i > 0 {
-		i--
-		earning := wd.Earning[i]
-		fundedAmount += earning.Earning.Amount
-		if fundedAmount <= wdAmount {
-			earninglist = append(earninglist, earning)
-		} else {
-			notfundedlist = append(notfundedlist, earning)
+	// sos untuk fian karena ada gmv
+	if wdAmount == wd.Earning.GetAmount() {
+		earninglist = wd.Earning
+		i = 0
+	} else {
+		for i > 0 {
+			i--
+			earning := wd.Earning[i]
+			fundedAmount += earning.Earning.Amount
+			if fundedAmount <= wdAmount {
+				earninglist = append(earninglist, earning)
+			} else {
+				notfundedlist = append(notfundedlist, earning)
+			}
 		}
 	}
+
 	if earninglist.GetAmount() != wdAmount {
 		if len(wd.Earning) == len(earninglist) {
 			var beforeNotFunded EarningList
@@ -113,7 +122,7 @@ func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
 
 				earninglist = append(beforeNotFunded, earninglist...)
 				if earninglist.GetAmount() != wdAmount {
-					return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("ls cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
+					return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("ls cannot trace funded earnings wd %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
 				}
 
 				return earninglist, notfundedlist, nil
@@ -127,7 +136,7 @@ func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
 			}
 		}
 
-		return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("cannot trace funded earning wd %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
+		return earninglist, notfundedlist, wd.WithErr(fmt.Errorf("cannot trace funded earning wd ret %.3f and earn %.3f", wdAmount, earninglist.GetAmount()))
 	}
 
 	return earninglist, notfundedlist, nil

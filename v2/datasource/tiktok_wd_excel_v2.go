@@ -32,10 +32,14 @@ func (s *v2TiktokWdImpl) IterateValidWithdrawal() ([]*WdSet, error) {
 	}
 	result := []*WdSet{}
 
-	for _, wd := range wds {
+	for i, wd := range wds {
 
 		fundedEarning, _, err := wd.FundedEarning()
 		if err != nil {
+			if i == 0 {
+				return result, err
+			}
+
 			if wd.IsLast {
 				return result, nil
 			}
@@ -163,7 +167,7 @@ func (s *v2TiktokWdImpl) IterateWithdrawal() ([]*WdSet, error) {
 	})
 
 	// setting last
-	if wd != nil {
+	if wd != nil && len(wds) > 1 {
 		wd.IsLast = true
 	}
 

@@ -9,6 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGmvMlongo(t *testing.T) {
+	fname := "../../test/assets/tiktok/gmv_mlongo.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	wds, err := importer.IterateValidWithdrawal()
+	assert.Nil(t, err)
+
+	assert.Len(t, wds, 1)
+
+}
+
 func TestShippingInsurance(t *testing.T) {
 	fname := "../../test/assets/tiktok/shipping_issurance.xlsx"
 	file, err := os.Open(fname)
