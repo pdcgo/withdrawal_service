@@ -159,7 +159,7 @@ func (wd *ShopeeWdSet) TraceValidEarning() (EarningList, error) {
 		}
 
 		if math.Abs(wd.Withdrawal.Amount) != result.GetAmount() {
-			return result, wd.WithErr(fmt.Errorf("cannot trace valid earning %.3f", result.GetAmount()))
+			return result, wd.WithErr(fmt.Errorf("cannot trace valid earning d %.3f", result.GetAmount()))
 		}
 
 	}

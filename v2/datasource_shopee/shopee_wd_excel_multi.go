@@ -2,9 +2,13 @@ package datasource_shopee
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"math"
+	"time"
 
 	"github.com/pdcgo/shared/db_models"
+	"github.com/pdcgo/shared/pkg/debugtool"
 )
 
 type wdMultiFileImpl struct {
@@ -42,47 +46,140 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 			return nil, err
 		}
 	}
-
 	unordered.Sort()
-	wds, err := unordered.Withdrawals(ctx)
-	if err != nil {
-		return wds, err
-	}
 
-	// mulai loop untuk get valid wd
+	df := NewInvoListDataframe(unordered)
+	invWds := df.
+		Query(
+			df.D.Type.Filter(func(i int, item db_models.AdjustmentType) bool {
+				return item == db_models.AdjFund
+			}),
+		).
+		Data()
+
 	result := []*ShopeeWdSet{}
+	notFundMap := map[int]EarningList{}
 
-	for _, wd := range wds {
-		notFundedAmount := wd.NotFundedAmount()
+	for i, invWd := range invWds {
+		var notFund EarningList
+		// getting not funded
+		notFund = df.
+			Query(
+				df.D.TransactionDate.Filter(func(i int, item time.Time) bool {
+					return item.Before(invWd.TransactionDate)
+				}),
+				df.D.BalanceAfter.Break(func(i int, item float64) bool {
+					return item == math.Abs(invWd.Amount)
+				}),
+			).Data()
 
-		if notFundedAmount != 0 {
-			validEarning, err := wd.TraceValidEarning()
-			if err != nil {
-
-				if wd.IsLast {
-					return result, nil
-				}
-
-				return result, err
-			}
-
-			result = append(result, &ShopeeWdSet{
-				Withdrawal:  wd.Withdrawal,
-				WdSetBefore: wd.WdSetBefore,
-				WdSetNext:   wd.WdSetNext,
-				Earning:     validEarning,
-				IsLast:      wd.IsLast,
-			})
+		if notFund.GetAmount() != invWd.BalanceAfter {
+			return result, fmt.Errorf("not funded is %.1f but balance after is %.1f", notFund.GetAmount(), invWd.BalanceAfter)
 		}
 
-		// if notFundedAmount > 0 {
-		// 	debugtool.LogJson(wd)
-		// }
-
-		if notFundedAmount == 0 {
-			result = append(result, wd)
+		if len(notFund) == 0 {
+			continue
 		}
+
+		notFundMap[i] = notFund
+		debugtool.LogJson("notfund", notFund)
+
+		// result = append(result, &ShopeeWdSet{
+		// 	Withdrawal: invWd,
+		// 	Earning:    notFund,
+		// 	IsLast:     true,
+		// })
 	}
+
+	for i, invWd := range invWds {
+		var fund EarningList
+		fundf := df.
+			Query(
+				df.D.TransactionDate.Filter(func(i int, item time.Time) bool {
+					return item.Before(invWd.TransactionDate)
+				}),
+			)
+
+		notFund, ok := notFundMap[i]
+		if !ok {
+			fundf = fundf.
+				Query(
+					fundf.D.BalanceAfter.Break(func(i int, item float64) bool {
+						return item == 0
+					}),
+				)
+		} else {
+			first := notFund[len(notFund)-1]
+			fundf = fundf.
+				Query(
+					fundf.D.TransactionDate.Filter(func(i int, item time.Time) bool {
+						return item.Before(first.TransactionDate)
+					}),
+					fundf.D.Amount.SearchPosition(func(partial Series[float64]) (bool, bool) {
+						res := 0.0
+						for _, item := range partial {
+							res += item
+						}
+						return res > math.Abs(invWd.Amount), res == math.Abs(invWd.Amount)
+					}),
+				)
+
+			debugtool.LogJson(fundf.Data())
+		}
+		fund = fundf.Data()
+
+		if math.Abs(invWd.Amount) != fund.GetAmount() {
+			return result, fmt.Errorf("funded is %.1f but withdrawal is %.1f", fund.GetAmount(), math.Abs(invWd.Amount))
+		}
+
+		result = append(result, &ShopeeWdSet{
+			Withdrawal: invWd,
+			Earning:    fund,
+		})
+
+	}
+
+	// // bagian lama
+
+	// wds, err := unordered.Withdrawals(ctx)
+	// if err != nil {
+	// 	return wds, err
+	// }
+
+	// // mulai loop untuk get valid wd
+	// result := []*ShopeeWdSet{}
+
+	// for _, wd := range wds {
+	// 	notFundedAmount := wd.NotFundedAmount()
+
+	// 	if notFundedAmount != 0 {
+	// 		validEarning, err := wd.TraceValidEarning()
+	// 		if err != nil {
+
+	// 			if wd.IsLast {
+	// 				return result, nil
+	// 			}
+
+	// 			return result, err
+	// 		}
+
+	// 		result = append(result, &ShopeeWdSet{
+	// 			Withdrawal:  wd.Withdrawal,
+	// 			WdSetBefore: wd.WdSetBefore,
+	// 			WdSetNext:   wd.WdSetNext,
+	// 			Earning:     validEarning,
+	// 			IsLast:      wd.IsLast,
+	// 		})
+	// 	}
+
+	// 	// if notFundedAmount > 0 {
+	// 	// 	debugtool.LogJson(wd)
+	// 	// }
+
+	// 	if notFundedAmount == 0 {
+	// 		result = append(result, wd)
+	// 	}
+	// }
 
 	return result, nil
 

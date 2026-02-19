@@ -8,6 +8,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMbErnaErr(t *testing.T) {
+
+	fname := "../../test/assets/shopee/mb_erna_err.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource_shopee.NewShopeeXlsWithdrawal(file)
+	_, err = importer.ValidWithdrawal(t.Context())
+	assert.Nil(t, err)
+
+	// for _, wd := range wds {
+	// 	t.Logf("%.3f", wd.Withdrawal.Amount)
+	// }
+
+	// for _, wd := range wds {
+	// 	assert.Equal(t, math.Abs(wd.Withdrawal.Amount), wd.Earning.GetAmount())
+	// 	debugtool.LogJson(wd)
+	// }
+}
+
 func TestShopeeDatasource(t *testing.T) {
 	fname := "../../test/assets/shopee/seluna_selesai_sisa.xlsx"
 	file, err := os.Open(fname)

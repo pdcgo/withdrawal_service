@@ -30,3 +30,30 @@ func TestOrderLuarNegeri(t *testing.T) {
 	_, err = importer.ValidWithdrawal(t.Context())
 	assert.Nil(t, err)
 }
+
+func TestOrderMbakErna(t *testing.T) {
+	fnames := []string{
+		"../../test/assets/shopee/mb_erna_err.xlsx",
+	}
+	files := []io.ReadCloser{}
+
+	for _, fname := range fnames {
+		file, err := os.Open(fname)
+		assert.Nil(t, err)
+		defer file.Close()
+
+		files = append(files, file)
+	}
+
+	importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
+	assert.Nil(t, err)
+
+	wds, err := importer.ValidWithdrawal(t.Context())
+	assert.Nil(t, err)
+
+	for _, wd := range wds {
+		t.Log("--------------------------------------------------------------")
+		t.Logf("%.3f", wd.Withdrawal.Amount)
+	}
+
+}
