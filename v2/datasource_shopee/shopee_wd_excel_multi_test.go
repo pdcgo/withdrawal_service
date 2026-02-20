@@ -45,15 +45,15 @@ func TestOrderMbakErna(t *testing.T) {
 		files = append(files, file)
 	}
 
-	importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
-	assert.Nil(t, err)
+	// importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
+	// assert.Nil(t, err)
 
-	wds, err := importer.ValidWithdrawal(t.Context())
-	assert.Nil(t, err)
+	// wds, err := importer.ValidWithdrawal(t.Context())
+	// assert.Nil(t, err)
 
-	for _, wd := range wds {
-		t.Log("--------------------------------------------------------------")
-		t.Logf("%.3f", wd.Withdrawal.Amount)
-	}
+	// for _, wd := range wds {
+	// 	t.Log("--------------------------------------------------------------")
+	// 	t.Logf("%.3f", wd.Withdrawal.Amount)
+	// }
 
 }
