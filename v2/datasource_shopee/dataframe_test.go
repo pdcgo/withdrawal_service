@@ -95,7 +95,7 @@ func TestDataframe(t *testing.T) {
 			fund.D.TransactionDate.Filter(func(i int, item time.Time) bool {
 				return item.Before(startFunded.TransactionDate) || item.Equal(startFunded.TransactionDate)
 			}),
-			fund.D.BalanceAfter.Break(func(i int, item float64) bool {
+			fund.D.BalanceAfter.Break(false, func(i int, item float64) bool {
 				return item == 0
 			}),
 		).

@@ -21,11 +21,14 @@ func (s Series[T]) Filter(handler func(i int, item T) bool) OffsetFilter {
 	}
 }
 
-func (s Series[T]) Break(handler func(i int, item T) bool) OffsetFilter {
+func (s Series[T]) Break(includeBreak bool, handler func(i int, item T) bool) OffsetFilter {
 	return func(offset []int) []int {
 		result := []int{}
 		for _, i := range offset {
 			if handler(i, s[i]) {
+				if includeBreak {
+					result = append(result, i)
+				}
 				break
 			}
 

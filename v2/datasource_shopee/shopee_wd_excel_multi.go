@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pdcgo/shared/db_models"
-	"github.com/pdcgo/shared/pkg/debugtool"
 )
 
 type wdMultiFileImpl struct {
@@ -57,6 +56,14 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 		).
 		Data()
 
+	// sumover value
+	sumAmountDf := Series[float64]{}
+	sumamount := 0.0
+	for i := len(df.D.Amount) - 1; i >= 0; i-- {
+		sumamount += df.D.Amount[i]
+		sumAmountDf = append(sumAmountDf, sumamount)
+	}
+
 	result := []*ShopeeWdSet{}
 	notFundMap := map[int]EarningList{}
 
@@ -68,7 +75,7 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 				df.D.TransactionDate.Filter(func(i int, item time.Time) bool {
 					return item.Before(invWd.TransactionDate)
 				}),
-				df.D.BalanceAfter.Break(func(i int, item float64) bool {
+				df.D.BalanceAfter.Break(false, func(i int, item float64) bool {
 					return item == math.Abs(invWd.Amount)
 				}),
 			).Data()
@@ -82,7 +89,6 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 		}
 
 		notFundMap[i] = notFund
-		debugtool.LogJson("notfund", notFund)
 
 		// result = append(result, &ShopeeWdSet{
 		// 	Withdrawal: invWd,
@@ -104,27 +110,36 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 		if !ok {
 			fundf = fundf.
 				Query(
-					fundf.D.BalanceAfter.Break(func(i int, item float64) bool {
+					fundf.D.BalanceAfter.Break(false, func(i int, item float64) bool {
 						return item == 0
 					}),
 				)
 		} else {
 			first := notFund[len(notFund)-1]
+
+			cc := 0.0
+
 			fundf = fundf.
 				Query(
 					fundf.D.TransactionDate.Filter(func(i int, item time.Time) bool {
 						return item.Before(first.TransactionDate)
 					}),
-					fundf.D.Amount.SearchPosition(func(partial Series[float64]) (bool, bool) {
-						res := 0.0
-						for _, item := range partial {
-							res += item
-						}
-						return res > math.Abs(invWd.Amount), res == math.Abs(invWd.Amount)
+
+					fundf.D.Amount.Break(true, func(i int, item float64) bool {
+						cc += item
+						return cc == math.Abs(invWd.Amount)
 					}),
+
+					// fundf.D.Amount.SearchPosition(func(partial Series[float64]) (bool, bool) {
+					// 	res := 0.0
+					// 	for _, item := range partial {
+					// 		res += item
+					// 	}
+					// 	return res > math.Abs(invWd.Amount), res == math.Abs(invWd.Amount)
+					// }),
 				)
 
-			debugtool.LogJson(fundf.Data())
+			// debugtool.LogJson(fundf.Data())
 		}
 		fund = fundf.Data()
 
