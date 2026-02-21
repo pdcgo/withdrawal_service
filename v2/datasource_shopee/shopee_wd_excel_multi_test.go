@@ -45,15 +45,41 @@ func TestOrderMbakErna(t *testing.T) {
 		files = append(files, file)
 	}
 
-	// importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
-	// assert.Nil(t, err)
+	importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
+	assert.Nil(t, err)
 
-	// wds, err := importer.ValidWithdrawal(t.Context())
-	// assert.Nil(t, err)
+	wds, err := importer.ValidWithdrawal(t.Context())
+	assert.Nil(t, err)
+	assert.Len(t, wds, 2)
 
-	// for _, wd := range wds {
-	// 	t.Log("--------------------------------------------------------------")
-	// 	t.Logf("%.3f", wd.Withdrawal.Amount)
-	// }
+	for _, wd := range wds {
+		t.Logf("%.3f", wd.Withdrawal.Amount)
+	}
 
+}
+
+func TestAwanWdGagal(t *testing.T) {
+	fnames := []string{
+		"../../test/assets/shopee/awan_wdgagal.xlsx",
+	}
+	files := []io.ReadCloser{}
+
+	for _, fname := range fnames {
+		file, err := os.Open(fname)
+		assert.Nil(t, err)
+		defer file.Close()
+
+		files = append(files, file)
+	}
+
+	importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
+	assert.Nil(t, err)
+
+	wds, err := importer.ValidWithdrawal(t.Context())
+	assert.Nil(t, err)
+	assert.Len(t, wds, 16)
+
+	for _, wd := range wds {
+		t.Logf("%.3f", wd.Withdrawal.Amount)
+	}
 }

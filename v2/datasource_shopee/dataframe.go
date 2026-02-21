@@ -121,6 +121,7 @@ type dataframeData struct {
 	BalanceAfter    Series[float64]
 	Region          Series[string]
 	IsOtherRegion   Series[bool]
+	Failed          Series[bool]
 }
 
 type InvoListDataframe struct {
@@ -142,6 +143,7 @@ func NewInvoListDataframe(datas []*db_models.InvoItem) *InvoListDataframe {
 			BalanceAfter:    Series[float64]{},
 			Region:          Series[string]{},
 			IsOtherRegion:   Series[bool]{},
+			Failed:          Series[bool]{},
 		},
 	}
 
@@ -154,6 +156,7 @@ func NewInvoListDataframe(datas []*db_models.InvoItem) *InvoListDataframe {
 		d.D.BalanceAfter = append(d.D.BalanceAfter, item.BalanceAfter)
 		d.D.Region = append(d.D.Region, item.Region)
 		d.D.IsOtherRegion = append(d.D.IsOtherRegion, item.IsOtherRegion)
+		d.D.Failed = append(d.D.Failed, item.Failed)
 		d.offset = append(d.offset, d.count)
 		d.count++
 	}
@@ -185,6 +188,10 @@ func (d *InvoListDataframe) First() *db_models.InvoItem {
 	}
 
 	i := d.offset[0]
+	return d.get(i)
+}
+
+func (d *InvoListDataframe) get(i int) *db_models.InvoItem {
 	item := db_models.InvoItem{
 		ExternalOrderID: d.D.ExternalOrderID[i],
 		Type:            d.D.Type[i],
@@ -194,24 +201,26 @@ func (d *InvoListDataframe) First() *db_models.InvoItem {
 		BalanceAfter:    d.D.BalanceAfter[i],
 		Region:          d.D.Region[i],
 		IsOtherRegion:   d.D.IsOtherRegion[i],
+		Failed:          d.D.Failed[i],
 	}
+
 	return &item
+}
+
+func (d *InvoListDataframe) Last() *db_models.InvoItem {
+	if len(d.offset) == 0 {
+		return nil
+	}
+
+	i := d.offset[len(d.offset)-1]
+	return d.get(i)
+
 }
 
 func (d *InvoListDataframe) Data() []*db_models.InvoItem {
 	result := []*db_models.InvoItem{}
 	for _, i := range d.offset {
-		item := db_models.InvoItem{
-			ExternalOrderID: d.D.ExternalOrderID[i],
-			Type:            d.D.Type[i],
-			TransactionDate: d.D.TransactionDate[i],
-			Description:     d.D.Description[i],
-			Amount:          d.D.Amount[i],
-			BalanceAfter:    d.D.BalanceAfter[i],
-			Region:          d.D.Region[i],
-			IsOtherRegion:   d.D.IsOtherRegion[i],
-		}
-		result = append(result, &item)
+		result = append(result, d.get(i))
 	}
 
 	return result

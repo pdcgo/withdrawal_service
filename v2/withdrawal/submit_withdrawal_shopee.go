@@ -182,6 +182,9 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 					return streamerr(err)
 				}
 
+			case db_models.AdjFund:
+				continue
+
 			default:
 				return streamerr(fmt.Errorf("[withdrawal] %s not implemented", earn.Type))
 

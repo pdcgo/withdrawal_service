@@ -48,10 +48,17 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 	unordered.Sort()
 
 	df := NewInvoListDataframe(unordered)
+
 	invWds := df.
 		Query(
 			df.D.Type.Filter(func(i int, item db_models.AdjustmentType) bool {
 				return item == db_models.AdjFund
+			}),
+			df.D.Amount.Filter(func(i int, item float64) bool {
+				return item < 0
+			}),
+			df.D.Failed.Filter(func(i int, item bool) bool {
+				return item == false
 			}),
 		).
 		Data()
@@ -108,9 +115,12 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 
 		notFund, ok := notFundMap[i]
 		if !ok {
+
 			fundf = fundf.
 				Query(
 					fundf.D.BalanceAfter.Break(false, func(i int, item float64) bool {
+
+						// fmt.Printf("%d %.1f\n", i, item)
 						return item == 0
 					}),
 				)
@@ -144,6 +154,10 @@ func (w *wdMultiFileImpl) ValidWithdrawal(ctx context.Context) ([]*ShopeeWdSet, 
 		fund = fundf.Data()
 
 		if math.Abs(invWd.Amount) != fund.GetAmount() {
+			if i == (len(invWds)-1) && i > 1 {
+				return result, nil
+			}
+
 			return result, fmt.Errorf("funded is %.1f but withdrawal is %.1f", fund.GetAmount(), math.Abs(invWd.Amount))
 		}
 
