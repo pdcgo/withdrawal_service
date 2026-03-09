@@ -6,6 +6,7 @@ import (
 	"github.com/pdcgo/shared/db_models"
 )
 
+// Deprecated: asasdasdad
 type Series[T any] []T
 type OffsetFilter func([]int) []int
 

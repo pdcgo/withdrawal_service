@@ -1,6 +1,7 @@
 package datasource_shopee_test
 
 import (
+	"io"
 	"os"
 	"testing"
 
@@ -10,12 +11,22 @@ import (
 
 func TestMbErnaErr(t *testing.T) {
 
-	fname := "../../test/assets/shopee/mb_erna_err.xlsx"
-	file, err := os.Open(fname)
-	assert.Nil(t, err)
-	defer file.Close()
+	fnames := []string{
+		"../../test/assets/shopee/mb_erna_err.xlsx",
+	}
+	files := []io.ReadCloser{}
 
-	importer := datasource_shopee.NewShopeeXlsWithdrawal(file)
+	for _, fname := range fnames {
+		file, err := os.Open(fname)
+		assert.Nil(t, err)
+		defer file.Close()
+
+		files = append(files, file)
+	}
+
+	importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
+	assert.Nil(t, err)
+
 	_, err = importer.ValidWithdrawal(t.Context())
 	assert.Nil(t, err)
 
