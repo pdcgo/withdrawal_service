@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pdcgo/schema/services/accounting_iface/v1"
@@ -52,7 +53,7 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 		if err == nil {
 			return nil
 		}
-		streamlog(err.Error())
+		streamlog("%s", err.Error())
 		return err
 	}
 
@@ -77,8 +78,7 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 		agent,
 	)
 	if err != nil {
-		streamlog(err.Error())
-		return err
+		return streamerr(err)
 	}
 
 	streamlog("marketplace %s found..", mp.MpName)
@@ -93,6 +93,19 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 
 	// update order jadi selesai
 	for _, wd := range wds {
+		err = w.logWithdrawal(w.db.WithContext(ctx), &V2WithdrawalLog{
+			TeamId:    mp.TeamID,
+			ShopId:    mp.ID,
+			Amount:    wd.Withdrawal.Amount,
+			UserId:    agent.IdentityID(),
+			At:        wd.Withdrawal.SuccessTime,
+			CreatedAt: time.Now(),
+		})
+
+		if err != nil {
+			return streamerr(err)
+		}
+
 		wdAmount := wd.Withdrawal.Amount
 		timeStr := wd.Withdrawal.RequestTime.Format(tiktokDateFmt)
 		streamlog("revenue withdrawal amount %.3f at %s", wdAmount, timeStr)
@@ -109,50 +122,6 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 		if err != nil {
 			return streamerr(err)
 		}
-
-		// for _, earning := range wd.Earning {
-		// 	for _, inv := range earning.Involist {
-		// 		streamlog("add fund to order %s amount %.3f", inv.ExternalOrderID, inv.Amount)
-		// 		switch inv.Type {
-		// 		case db_models.AdjOrderFund:
-		// 			err = stream.Send(&order_iface.OrderFundSetRequest{
-		// 				Kind: &order_iface.OrderFundSetRequest_OrderFundSet{
-		// 					OrderFundSet: &order_iface.OrderFundSet{
-		// 						TeamId: pay.TeamId,
-		// 						OrderIdentifier: &order_iface.OrderFundSet_OrderRefId{
-		// 							OrderRefId: inv.ExternalOrderID,
-		// 						},
-		// 						Amount: inv.Amount,
-		// 						At:     timestamppb.New(inv.TransactionDate),
-		// 						Desc:   inv.Description,
-		// 					},
-		// 				},
-		// 			})
-		// 			if err != nil {
-		// 				return streamerr(err)
-		// 			}
-
-		// 			// complete order
-		// 			err = stream.Send(&order_iface.OrderFundSetRequest{
-		// 				Kind: &order_iface.OrderFundSetRequest_OrderCompletedSet{
-		// 					OrderCompletedSet: &order_iface.OrderCompletedSet{
-		// 						TeamId: pay.TeamId,
-		// 						OrderIdentifier: &order_iface.OrderCompletedSet_OrderRefId{
-		// 							OrderRefId: inv.ExternalOrderID,
-		// 						},
-		// 						Amount: inv.Amount,
-		// 						WdAt:   timestamppb.New(wd.Withdrawal.RequestTime),
-		// 					},
-		// 				},
-		// 			})
-		// 			if err != nil {
-		// 				return streamerr(err)
-		// 			}
-
-		// 		}
-
-		// 	}
-		// }
 
 		// streaming to revenue
 		for _, earning := range wd.Earning {

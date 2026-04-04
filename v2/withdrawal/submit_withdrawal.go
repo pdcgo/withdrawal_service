@@ -94,7 +94,7 @@ func (w *wdServiceImpl) SubmitWithdrawal(
 		agent,
 	)
 	if err != nil {
-		streamlog(err.Error())
+		streamlog("%s", err.Error())
 		return err
 	}
 
@@ -237,7 +237,7 @@ func (w *wdServiceImpl) SubmitWithdrawal(
 	})
 
 	if err != nil {
-		streamlog(err.Error())
+		streamlog("%s", err.Error())
 		return err
 	}
 
