@@ -219,6 +219,24 @@ func TestDeductionGmv(t *testing.T) {
 
 }
 
+func TestNegativeSource(t *testing.T) {
+	fname := "../../test/assets/tiktok/isna_negative.xlsx"
+	file, err := os.Open(fname)
+	assert.Nil(t, err)
+	defer file.Close()
+
+	importer := datasource.NewV2TiktokWdXls(file)
+	_, err = importer.IterateWithdrawal()
+	assert.Nil(t, err)
+
+	// getting valid wd
+	wds, err := importer.IterateValidWithdrawal()
+	assert.Nil(t, err)
+
+	assert.Len(t, wds, 2)
+
+}
+
 func TestPivanFundInvalid(t *testing.T) {
 	fname := "../../test/assets/tiktok/pivan_fund_invalid.xlsx"
 	file, err := os.Open(fname)

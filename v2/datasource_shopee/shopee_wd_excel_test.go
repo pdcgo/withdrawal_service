@@ -1,12 +1,44 @@
 package datasource_shopee_test
 
 import (
+	"io"
 	"os"
 	"testing"
 
 	"github.com/pdcgo/withdrawal_service/v2/datasource_shopee"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMbErnaErr(t *testing.T) {
+
+	fnames := []string{
+		"../../test/assets/shopee/mb_erna_err.xlsx",
+	}
+	files := []io.ReadCloser{}
+
+	for _, fname := range fnames {
+		file, err := os.Open(fname)
+		assert.Nil(t, err)
+		defer file.Close()
+
+		files = append(files, file)
+	}
+
+	importer, err := datasource_shopee.NewShopeeXlsMultiFile(files)
+	assert.Nil(t, err)
+
+	_, err = importer.ValidWithdrawal(t.Context())
+	assert.Nil(t, err)
+
+	// for _, wd := range wds {
+	// 	t.Logf("%.3f", wd.Withdrawal.Amount)
+	// }
+
+	// for _, wd := range wds {
+	// 	assert.Equal(t, math.Abs(wd.Withdrawal.Amount), wd.Earning.GetAmount())
+	// 	debugtool.LogJson(wd)
+	// }
+}
 
 func TestShopeeDatasource(t *testing.T) {
 	fname := "../../test/assets/shopee/seluna_selesai_sisa.xlsx"

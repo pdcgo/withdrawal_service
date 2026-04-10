@@ -109,7 +109,7 @@ func (wd *WdSet) FundedEarning() (EarningList, EarningList, error) {
 					}
 					if onbeforeAmount != beforeNotFunded.GetAmount() {
 						// fmt.Printf("%.3f - %.3f - %d\n\n\n\n", needBeforeAmount, onbeforeAmount, len(earninglist))
-						return earninglist, notfundedlist, errors.New("need before not same")
+						return earninglist, notfundedlist, fmt.Errorf("need before not same, %.2f vs %.2f", onbeforeAmount, beforeNotFunded.GetAmount())
 					}
 
 				} else {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pdcgo/schema/services/order_iface/v1"
@@ -49,7 +50,7 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 		if err == nil {
 			return nil
 		}
-		streamlog(err.Error())
+		streamlog("%s", err.Error())
 		return err
 	}
 
@@ -73,8 +74,7 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 	streamlog("change marketplace id jika tidak sesuai..")
 	refids, err := source.GetRefIDs()
 	if err != nil {
-		streamlog(err.Error())
-		return err
+		return streamerr(err)
 	}
 
 	err = w.
@@ -87,8 +87,7 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 		Error
 
 	if err != nil {
-		streamlog(err.Error())
-		return err
+		return streamerr(err)
 	}
 
 	wds, err := source.ValidWithdrawal(ctx)
@@ -97,7 +96,19 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 	}
 
 	for _, wd := range wds {
-		// withdrawal
+		// creating log v2 wd
+		err = w.logWithdrawal(w.db.WithContext(ctx), &V2WithdrawalLog{
+			TeamId:    mp.TeamID,
+			ShopId:    mp.ID,
+			Amount:    wd.Withdrawal.Amount,
+			UserId:    agent.IdentityID(),
+			At:        wd.Withdrawal.TransactionDate,
+			CreatedAt: time.Now(),
+		})
+
+		if err != nil {
+			return streamerr(err)
+		}
 
 		wdAmount := wd.Withdrawal.Amount
 		timeStr := wd.Withdrawal.TransactionDate.Format("2006-01-02 15:04:05")
@@ -181,6 +192,9 @@ func (w *wdServiceImpl) SubmitWithdrawalShopee(
 				if err != nil {
 					return streamerr(err)
 				}
+
+			case db_models.AdjFund:
+				continue
 
 			default:
 				return streamerr(fmt.Errorf("[withdrawal] %s not implemented", earn.Type))

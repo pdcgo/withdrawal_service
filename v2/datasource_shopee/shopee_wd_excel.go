@@ -183,7 +183,7 @@ func (s *shopeeXlsImpl) Iterate(ctx context.Context, handler func(item *db_model
 			return err
 		}
 
-		var isOtherRegion bool
+		var isOtherRegion, isFailed bool
 		var region string
 
 		var tipe db_models.AdjustmentType = db_models.AdjOrderFund
@@ -203,13 +203,13 @@ func (s *shopeeXlsImpl) Iterate(ctx context.Context, handler func(item *db_model
 			case "Sedang Diproses":
 				return ErrContainInProcessWD
 			case "Gagal":
-				return nil
+				isFailed = true
 			}
 
-			switch item.Description {
-			case "Pengembalian Dana untuk Penarikan Gagal":
-				return nil
-			}
+			// switch item.Description {
+			// case "Pengembalian Dana untuk Penarikan Gagal":
+			// 	return nil
+			// }
 
 			tipe = db_models.AdjFund
 		case models.WdTxAdjustment:
@@ -262,6 +262,7 @@ func (s *shopeeXlsImpl) Iterate(ctx context.Context, handler func(item *db_model
 			Type:            tipe,
 			IsOtherRegion:   isOtherRegion,
 			Region:          region,
+			Failed:          isFailed,
 		})
 
 	})
