@@ -84,7 +84,7 @@ func (s *v2TiktokWdImpl) IterateWithdrawal() ([]*WdSet, error) {
 
 	err = s.iterateSheet("Withdrawal records", func(data []string) error {
 
-		if data[0] == "Type" && data[1] == "Reference ID" {
+		if data[0] == "Transaction type" && data[1] == "Reference ID" {
 			startProcessing = true
 			return nil
 		}

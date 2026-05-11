@@ -17,7 +17,8 @@ import (
 	"gorm.io/gorm"
 )
 
-type RegisterHandler func()
+type ServiceReflectNames []string
+type RegisterHandler func() ServiceReflectNames
 
 func NewRegister(
 	bucketConfig *document_service.BucketConfig,
@@ -33,7 +34,9 @@ func NewRegister(
 	defaultInterceptor custom_connect.DefaultInterceptor,
 ) RegisterHandler {
 
-	return func() {
+	return func() ServiceReflectNames {
+
+		grpcReflects := ServiceReflectNames{}
 
 		path, handler := withdrawal_ifaceconnect.NewWithdrawalServiceHandler(
 			withdrawal.NewWithdrawalService(
@@ -49,9 +52,13 @@ func NewRegister(
 			defaultInterceptor,
 		)
 		mux.Handle(path, handler)
+		grpcReflects = append(grpcReflects, withdrawal_ifaceconnect.WithdrawalServiceName)
 
 		path, handler = asset_ifaceconnect.NewWithdrawalDocumentServiceHandler(
 			document_service.NewWithdrawalDocumentService(db, auth, storageClient, bucketConfig), defaultInterceptor)
 		mux.Handle(path, handler)
+		grpcReflects = append(grpcReflects, asset_ifaceconnect.WithdrawalDocumentServiceName)
+
+		return grpcReflects
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/pdcgo/schema/services/revenue_iface/v1"
 	"github.com/pdcgo/schema/services/withdrawal_iface/v2"
 	"github.com/pdcgo/shared/db_models"
+	"github.com/pdcgo/shared/pkg/debugtool"
 	"github.com/pdcgo/withdrawal_service/v2/datasource"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -87,8 +89,14 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 	streamlog("parsing file..")
 	source := datasource.NewV2TiktokWdXls(io.NopCloser(bytes.NewReader(data)))
 	wds, err := source.IterateValidWithdrawal()
+
 	if err != nil {
+		slog.Error(err.Error())
 		return streamerr(err)
+	}
+
+	if len(wds) == 0 {
+		return streamerrf("withdrawal data is empty")
 	}
 
 	// update order jadi selesai
@@ -139,11 +147,12 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 						}
 
 						if ord.ID == 0 {
-							return streamerrf("cannot get order by order id %s", inv.ExternalOrderID)
+							return streamerrf("Shipping insurance compensation cannot get order by order id %s", inv.ExternalOrderID)
 						}
 					}
 				case db_models.InternalWdError:
 				default:
+					debugtool.LogJson(inv)
 					ord, err = w.orderRepo.OrderByExternalID(inv.ExternalOrderID)
 					if err != nil {
 						return err

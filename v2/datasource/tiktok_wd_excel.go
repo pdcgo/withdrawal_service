@@ -19,7 +19,7 @@ type TiktokWdXls interface {
 }
 
 type TiktokWdItem struct {
-	ExternalOrderID  string    `xls:"38" xlsheader:"Related order ID"`
+	ExternalOrderID  string    `xls:"55" xlsheader:"Related order ID"`
 	Type             string    `xls:"1"`
 	SettlementAmount float64   `xls:"5"`
 	OrderSettledTime time.Time `xls:"3" xlsdate:"2006/01/02" addhour:"true"`
