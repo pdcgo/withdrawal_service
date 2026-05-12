@@ -16,7 +16,6 @@ import (
 	"github.com/pdcgo/schema/services/revenue_iface/v1"
 	"github.com/pdcgo/schema/services/withdrawal_iface/v2"
 	"github.com/pdcgo/shared/db_models"
-	"github.com/pdcgo/shared/pkg/debugtool"
 	"github.com/pdcgo/withdrawal_service/v2/datasource"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -152,13 +151,13 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 					}
 				case db_models.InternalWdError:
 				default:
-					debugtool.LogJson(inv)
 					ord, err = w.orderRepo.OrderByExternalID(inv.ExternalOrderID)
 					if err != nil {
 						return err
 					}
 
 					if ord.ID == 0 {
+						// debugtool.LogJson(inv)
 						return streamerrf("cannot get order by order id %s", inv.ExternalOrderID)
 					}
 				}

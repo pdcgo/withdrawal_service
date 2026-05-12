@@ -267,6 +267,11 @@ func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) err
 				return nil
 			}
 
+			if item.ExternalOrderID == "" || item.ExternalOrderID == "0" {
+				item.ExternalOrderID = data[59]
+
+			}
+
 		case "GMV Payment for TikTok Ads":
 			tipe = db_models.AdsPayment
 			item.ExternalOrderID = data[0]
