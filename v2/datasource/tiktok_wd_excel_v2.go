@@ -259,6 +259,12 @@ func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) err
 			return err
 		}
 		var tipe db_models.AdjustmentType = db_models.AdjUnknown
+
+		if item.ExternalOrderID == "" || item.ExternalOrderID == "0" {
+			item.ExternalOrderID = data[59]
+
+		}
+
 		switch item.Type {
 		case "Order":
 			tipe = db_models.AdjOrderFund
@@ -270,16 +276,12 @@ func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) err
 				return nil
 			}
 
-			if item.ExternalOrderID == "" || item.ExternalOrderID == "0" {
-				item.ExternalOrderID = data[59]
-
-			}
-
 		case "GMV Payment for TikTok Ads":
 			tipe = db_models.AdsPayment
 			item.ExternalOrderID = data[0]
 
 		case "Logistics reimbursement":
+
 			if item.SettlementAmount > 0 {
 				tipe = db_models.AdjOrderFund
 			} else {

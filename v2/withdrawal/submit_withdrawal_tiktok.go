@@ -157,7 +157,6 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 					}
 
 					if ord.ID == 0 {
-						// debugtool.LogJson(inv)
 						return streamerrf("cannot get order by order id %s", inv.ExternalOrderID)
 					}
 				}

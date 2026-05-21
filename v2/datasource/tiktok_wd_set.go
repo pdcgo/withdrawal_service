@@ -3,7 +3,6 @@ package datasource
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 )
 
@@ -17,7 +16,7 @@ type EarningList []*Earning
 func (e EarningList) GetAmount() float64 {
 	hasil := 0.00
 	for _, earning := range e {
-		log.Println(earning.Earning.Type)
+		// log.Println(earning.Earning.Type)
 		invoAmount := earning.Involist.GetAmount()
 		hasil += invoAmount
 	}
