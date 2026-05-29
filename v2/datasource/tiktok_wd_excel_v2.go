@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/pdcgo/shared/db_models"
-	"github.com/pdcgo/shared/pkg/debugtool"
 	"github.com/pdcgo/shared/pkg/excel_reader"
 	"github.com/xuri/excelize/v2"
 )
@@ -259,7 +258,7 @@ func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) err
 				}
 			}
 
-			debugtool.LogJson(orderRefIndex, data[orderRefIndex:])
+			// debugtool.LogJson(orderRefIndex, data[orderRefIndex:])
 			return nil
 		}
 
