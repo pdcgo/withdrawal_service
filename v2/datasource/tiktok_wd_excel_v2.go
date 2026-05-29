@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pdcgo/shared/db_models"
+	"github.com/pdcgo/shared/pkg/debugtool"
 	"github.com/pdcgo/shared/pkg/excel_reader"
 	"github.com/xuri/excelize/v2"
 )
@@ -246,10 +247,19 @@ func (s *v2TiktokWdImpl) DetailSet() (*DetailSet, error) {
 // }
 
 func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) error) error {
+	var orderRefIndex int
+
 	return s.iterateSheet("Order details", func(data []string) error {
 		var err error
 		if data[4] != "IDR" {
-			s.getMetaOrderHeader(data)
+			for id, item := range data {
+				switch item {
+				case "Related order ID":
+					orderRefIndex = id
+				}
+			}
+
+			debugtool.LogJson(orderRefIndex, data[orderRefIndex:])
 			return nil
 		}
 
@@ -260,10 +270,7 @@ func (s *v2TiktokWdImpl) IterateOrder(handler func(invo *db_models.InvoItem) err
 		}
 		var tipe db_models.AdjustmentType = db_models.AdjUnknown
 
-		if item.ExternalOrderID == "" || item.ExternalOrderID == "0" {
-			item.ExternalOrderID = data[59]
-
-		}
+		item.ExternalOrderID = data[orderRefIndex]
 
 		switch item.Type {
 		case "Order":

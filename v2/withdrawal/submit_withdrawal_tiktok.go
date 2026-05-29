@@ -151,13 +151,14 @@ func (w *wdServiceImpl) SubmitWithdrawalTiktok(
 					}
 				case db_models.InternalWdError:
 				default:
+					// debugtool.LogJson(inv)
 					ord, err = w.orderRepo.OrderByExternalID(inv.ExternalOrderID)
 					if err != nil {
 						return err
 					}
 
 					if ord.ID == 0 {
-						return streamerrf("cannot get order by order id %s", inv.ExternalOrderID)
+						return streamerrf("submit tiktok cannot get order by order id %s", inv.ExternalOrderID)
 					}
 				}
 
