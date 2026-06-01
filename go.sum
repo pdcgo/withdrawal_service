@@ -511,8 +511,8 @@ github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjY
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/pdcgo/accounting_service v1.0.12 h1:W+WeAGqjPr7KIWgmO6TYSzju4V8TFfva29JiGHcbIUU=
 github.com/pdcgo/accounting_service v1.0.12/go.mod h1:S1IJdQcLsqY/VNXsXex48Uzzx96wl3A14jAcVxFjzE8=
-github.com/pdcgo/schema v1.0.133 h1:8nnY3+YrIC7o6xtjchmyvuUJdLcTMcGuLnApEaolTWE=
-github.com/pdcgo/schema v1.0.133/go.mod h1:PFVdZ4apphj9eQ3JPMhf8plHqRn2gB9sOyCzy/Iz50M=
+github.com/pdcgo/schema v1.0.134 h1:Wa3ZLs9J9r8xgGeOfY+w7alTNImw5Kex9n1pebxivHE=
+github.com/pdcgo/schema v1.0.134/go.mod h1:PFVdZ4apphj9eQ3JPMhf8plHqRn2gB9sOyCzy/Iz50M=
 github.com/pdcgo/shared v1.0.134 h1:yZ9b76xndLtNmwfDe7LIkQaZW+hN6+AHm9+mp37O4Fo=
 github.com/pdcgo/shared v1.0.134/go.mod h1:0fmKj08SxkQIBefLiiqDWj/mw9T0YFw1pUeyqTTbt84=
 github.com/pdcgo/v2_gots_sdk v1.3.10 h1:8rQFfldS6SRJE83VStmIWh74iNjVscr1IATLHKg9lo8=
